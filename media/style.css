@@ -215,17 +215,9 @@ ul.timelist, .timelist li { list-style-type:none; margin:0; padding:0; }
 .timelist a { padding:2px; }
 
 /* AJAX input widget */
-.ajax_select .remove {
-  cursor: pointer;
-  float: left;
-  margin-right: 10px;
+.ajax_select_del {
+  padding: 4px;
 }
-.ajax_select .remove:hover {
+.ajax_select_del:hover {
   color: red;
 }
-.ajax_select select {
-  float:left;
-}
-/* .ajax_select_add button{
-
-} */
