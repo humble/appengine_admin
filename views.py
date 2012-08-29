@@ -14,20 +14,20 @@ import utils
 import admin_settings
 import model_register
 from .model_register import getModelAdmin
-from .utils import Http404, Http500
+from .utils import Http404
 
 ADMIN_TEMPLATE_DIR = admin_settings.ADMIN_TEMPLATE_DIR
 ADMIN_ITEMS_PER_PAGE = admin_settings.ADMIN_ITEMS_PER_PAGE
 
+
 class BaseRequestHandler(webapp.RequestHandler):
     def handle_exception(self, exception, debug_mode):
-        logging.warning("Exception catched: %r" % exception)
-        if isinstance(exception, Http404) or isinstance(exception, Http500):
+        if isinstance(exception, Http404):
             self.error(exception.code)
             path = os.path.join(ADMIN_TEMPLATE_DIR, str(exception.code) + ".html")
             self.response.out.write(template.render(path, {'errorpage': True}))
-        else:
-            super(BaseRequestHandler, self).handle_exception(exception, debug_mode)
+            return
+        super(BaseRequestHandler, self).handle_exception(exception, debug_mode)
 
 
 class Admin(BaseRequestHandler):
@@ -82,7 +82,7 @@ class Admin(BaseRequestHandler):
         self.models.sort()
         # This variable is set by get and port methods and used later
         # for constructing new admin urls.
-        self.urlPrefix = ''
+        self.urlPrefix = '/admin/models'
 
     def _compileRegexps(self, regexps):
         """Compiles all regular expressions in regexps list
@@ -90,16 +90,14 @@ class Admin(BaseRequestHandler):
         for i in range(len(regexps)):
             regexps[i][0] = re.compile(regexps[i][0])
 
-    def get(self, urlPrefix, url):
+    def get(self, url):
         """Handle HTTP GET
         """
-        self.urlPrefix = urlPrefix
         self._callHandlingMethod(url, self.getRegexps)
 
-    def post(self, urlPrefix, url):
+    def post(self, url):
         """Handle HTTP POST
         """
-        self.urlPrefix = urlPrefix
         self._callHandlingMethod(url, self.postRegexps)
 
     def _callHandlingMethod(self, url, regexps):
@@ -134,18 +132,17 @@ class Admin(BaseRequestHandler):
     @staticmethod
     def _readonlyPropsWithValues(item, modelAdmin):
         readonlyProperties = copy.deepcopy(modelAdmin._readonlyProperties)
-        for i in range(len(readonlyProperties)):
-            itemValue = getattr(item, readonlyProperties[i].name)
-            readonlyProperties[i].value = itemValue
-            if readonlyProperties[i].typeName == 'BlobProperty':
-                logging.info("%s :: Binary content" % readonlyProperties[i].name)
-                readonlyProperties[i].meta = utils.getBlobProperties(item, readonlyProperties[i].name)
-                if readonlyProperties[i].value:
-                    readonlyProperties[i].value = True # release the memory
+        for i, prop in enumerate(readonlyProperties):
+            itemValue = getattr(item, prop.name)
+            prop.value = itemValue
+            if prop.typeName == 'BlobProperty':
+                logging.info("%s :: Binary content" % prop.name)
+                prop.meta = utils.getBlobProperties(item, prop.name)
+                if prop.value:
+                    prop.value = True  # release the memory
             else:
-                logging.info("%s :: %s" % (readonlyProperties[i].name, readonlyProperties[i].value))
+                logging.info("%s :: %s" % (prop.name, prop.value))
         return readonlyProperties
-
 
     @authorized.role("admin")
     def index_get(self):
@@ -163,13 +160,13 @@ class Admin(BaseRequestHandler):
         """
         modelAdmin = getModelAdmin(modelName)
         path = os.path.join(ADMIN_TEMPLATE_DIR, 'model_item_list.html')
-        page = utils.Page(
-                modelAdmin = modelAdmin,
-                itemsPerPage = ADMIN_ITEMS_PER_PAGE,
-                currentPage = self.request.get('page', 1)
-            )
+        paginator = utils.Paginator(
+            modelAdmin=modelAdmin,
+            itemsPerPage=ADMIN_ITEMS_PER_PAGE,
+        )
         # Get only those items that should be displayed in current page
-        items = page.getDataForPage()
+        page = paginator.get_page(request=self.request)
+        items = list(page)
         self.response.out.write(template.render(path, {
             'models': self.models,
             'urlPrefix': self.urlPrefix,
@@ -188,9 +185,9 @@ class Admin(BaseRequestHandler):
         templateValues = {
             'models': self.models,
             'urlPrefix': self.urlPrefix,
-            'item' : None,
+            'item': None,
             'moduleTitle': modelAdmin.modelName,
-            'editForm': modelAdmin.AdminForm(urlPrefix = self.urlPrefix),
+            'editForm': modelAdmin.AdminForm(urlPrefix=self.urlPrefix),
             'readonlyProperties': modelAdmin._readonlyProperties,
         }
         path = os.path.join(ADMIN_TEMPLATE_DIR, 'model_item_edit.html')
@@ -201,7 +198,7 @@ class Admin(BaseRequestHandler):
         """Create new record of particular model
         """
         modelAdmin = getModelAdmin(modelName)
-        form = modelAdmin.AdminForm(urlPrefix = self.urlPrefix, data = self.request.POST)
+        form = modelAdmin.AdminForm(urlPrefix=self.urlPrefix, data=self.request.POST)
         if form.is_valid():
         # Save the data, and redirect to the edit page
             item = form.save()
@@ -211,7 +208,7 @@ class Admin(BaseRequestHandler):
             templateValues = {
                 'models': self.models,
                 'urlPrefix': self.urlPrefix,
-                'item' : None,
+                'item': None,
                 'moduleTitle': modelAdmin.modelName,
                 'editForm': form,
                 'readonlyProperties': modelAdmin._readonlyProperties,
@@ -220,7 +217,7 @@ class Admin(BaseRequestHandler):
             self.response.out.write(template.render(path, templateValues))
 
     @authorized.role("admin")
-    def edit_get(self, modelName, key = None):
+    def edit_get(self, modelName, key=None):
         """Show for for editing existing record of particular model.
             Raises Http404 if record not found.
         """
@@ -229,9 +226,9 @@ class Admin(BaseRequestHandler):
         templateValues = {
             'models': self.models,
             'urlPrefix': self.urlPrefix,
-            'item' : item,
+            'item': item,
             'moduleTitle': modelAdmin.modelName,
-            'editForm': modelAdmin.AdminForm(urlPrefix = self.urlPrefix, instance = item),
+            'editForm': modelAdmin.AdminForm(urlPrefix=self.urlPrefix, instance=item),
             'readonlyProperties': self._readonlyPropsWithValues(item, modelAdmin),
         }
         path = os.path.join(ADMIN_TEMPLATE_DIR, 'model_item_edit.html')
@@ -244,7 +241,7 @@ class Admin(BaseRequestHandler):
         """
         modelAdmin = getModelAdmin(modelName)
         item = self._safeGetItem(modelAdmin.model, key)
-        form = modelAdmin.AdminForm(urlPrefix = self.urlPrefix, data = self.request.POST, instance = item)
+        form = modelAdmin.AdminForm(urlPrefix=self.urlPrefix, data=self.request.POST, instance=item)
         if form.is_valid():
         # Save the data, and redirect to the edit page
             item = form.save()
@@ -253,14 +250,13 @@ class Admin(BaseRequestHandler):
             templateValues = {
                 'models': self.models,
                 'urlPrefix': self.urlPrefix,
-                'item' : item,
+                'item': item,
                 'moduleTitle': modelAdmin.modelName,
                 'editForm': form,
                 'readonlyProperties': self._readonlyPropsWithValues(item, modelAdmin),
             }
             path = os.path.join(ADMIN_TEMPLATE_DIR, 'model_item_edit.html')
             self.response.out.write(template.render(path, templateValues))
-
 
     @authorized.role("admin")
     def delete_get(self, modelName, key):

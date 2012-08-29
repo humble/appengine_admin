@@ -1,0 +1,34 @@
+<div class="ajax_select"{{ flat_attrs }} data-name="{{ name }}">
+  <ul class="ajax_select_values">
+{% for key, obj in objects %}
+    <li>
+      <input type=hidden name="{{ name }}" value="{{ key }}"/>
+      <span>{{ obj.class_name }}: <a href="{{ obj.url }}">{{ obj }}</a></span>
+      <a href="#" class="ajax_select_del">x</a>
+    </li>
+{% endfor %}
+  </ul>
+
+  <div class="ajax_add_value">
+    <input type=text name="{{ name }}" value="" class="ajax_add_key_input"/>
+    <input type=submit name=add value="Add" class="ajax_add_submit_input"/>
+    <div class="ajax_add_hint">Paste the string representation of a key above</div>
+{% if False %}{# TODO: implement AJAX paginator here #}
+    <div>OR use the paged selector(s) below.</div>
+
+{% for class_name, class in object_classes.items() %}
+    <ul class="ajax_paged_selectors">
+      <li class="ajax_paged_selector">
+        <a href="#" class="open_paged_selector">Add {{ class_name }}</a>
+
+        <ul class="paged_selector" style='display:none'>
+  {% for item in paged_selector(class) %}
+        <li>{{ item }}</li>
+  {% endfor %}
+        </ul>
+      </li>
+    </ul>
+{% endfor %}
+{% endif %}
+  </div>
+</div>

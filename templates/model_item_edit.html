@@ -10,7 +10,7 @@
 </p>
 {% endif %}
 <!-- Editable properties -->
-<form name="adminEditForm" method="post"
+<form id='edit-form' name="adminEditForm" method="post"
     action="{{ urlPrefix }}/{{ moduleTitle }}/{% if item %}edit/{{ item.key }}{% else %}new{% endif %}/"
     {% if editForm.enctype %}enctype="{{ editForm.enctype }}"{% endif %}>
 <table class="editForm">
@@ -37,6 +37,9 @@
     </tr>
     {% if item %}
     <!-- Readonly properties -->
+    <tr>
+        <td colspan="2"><h3>Read-only properties</h3></td>
+    </tr>
     {% for field in readonlyProperties %}
         <tr>
             <td>{{ field.verbose_name }}:</td>
@@ -56,4 +59,45 @@
     {% endif %}
 </table>
 </form>
+{% endblock %}
+
+{% block footer %}
+  <script type='text/javascript'>
+    $editForm = $('#edit-form');
+    $editForm.delegate('.ajax_select_del', 'click', function(e) {
+      e.preventDefault();
+      var $instance = $(this).closest('li');
+      if ($instance.hasClass('ajax_deleted')) {
+        $instance.removeClass('ajax_deleted');
+        $(this).html('x');
+        $instance.find('input').removeAttr('disabled');
+      } else {
+        $instance.addClass('ajax_deleted');
+        $(this).html('(undo delete)');
+        $instance.find('input').attr('disabled', 'disabled');
+      }
+    });
+
+    $editForm.find('.ajax_add_key_input').keydown(function(e) {
+      if (e.keyCode === 13) {
+        $(this).closest('.ajax_add_value').find('.ajax_add_submit_input').click();
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    });
+    $editForm.find('.ajax_add_submit_input').click(function(e) {
+      e.preventDefault();
+      var $self = $(this),
+          $ajaxSelect = $self.closest('.ajax_select'),
+          $input = $self.closest('.ajax_add_value').find('.ajax_add_key_input');
+      if (!$input.val()) {
+        return;
+      }
+      var $item = '<li><input type=hidden name="' + $ajaxSelect.data('name') + '" value="' + $input.val()  + '"/>' +
+                  '<span>Key: ' + $input.val() + '</span> ' +
+                  '<a href="#" class="ajax_select_del">x</a></li>';
+      $ajaxSelect.find('.ajax_select_values').append($item);
+      $input.val('');
+    });
+  </script>
 {% endblock %}

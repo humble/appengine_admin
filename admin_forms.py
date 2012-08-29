@@ -2,18 +2,11 @@ import logging
 import pickle
 import copy
 import datetime
-try:
-    from google.appengine.ext.db import djangoforms
-except ImportError:
-    import djangoforms
+import djangoforms
 from google.appengine.api import datastore_errors
 from google.appengine.ext import db
-try:
-    from django import newforms as forms
-    from django.newforms.util import ValidationError
-except ImportError:
-    from django import forms
-    from django.forms.util import ValidationError
+from django import forms
+from django.forms.util import ValidationError
 from django.utils.translation import gettext as _
 
 from . import admin_widgets
@@ -23,12 +16,14 @@ from . import admin_settings
 MAX_BLOB_SIZE = admin_settings.MAX_BLOB_SIZE
 BLOB_FIELD_META_SUFFIX = admin_settings.BLOB_FIELD_META_SUFFIX
 
+
 class AdminModelForm(djangoforms.ModelForm):
     """This class extends ModelForm to be able to pass additional attributes
         to the form while processing the request.
     """
     enctype = ''
-    def __init__(self, urlPrefix = '', *args, **kwargs):
+
+    def __init__(self, urlPrefix='', *args, **kwargs):
         super(AdminModelForm, self).__init__(*args, **kwargs)
         self.urlPrefix = urlPrefix
         instance = kwargs.get('instance', None)
@@ -75,8 +70,8 @@ class AdminModelForm(djangoforms.ModelForm):
                     setattr(item, metaFieldName, pickle.dumps(metaData))
                 else:
                     logging.info(
-                        'Cache field "%(metaFieldName)s" for blob property "%(propertyName)s" not found. Add field "%(metaFieldName)s" to model "%(modelName)s" if you want to store meta info about the uploaded file',
-                        {'metaFieldName': metaFieldName, 'propertyName' : fieldName, 'modelName': self.Meta.model.kind()}
+                      'Cache field "%(metaFieldName)s" for blob property "%(propertyName)s" not found. Add field "%(metaFieldName)s" to model "%(modelName)s" if you want to store meta info about the uploaded file',
+                      {'metaFieldName': metaFieldName, 'propertyName': fieldName, 'modelName': self.Meta.model.kind()}
                     )
         # Save the item in Datastore if not told otherwise.
         if kwargs.get('commit', True):
@@ -84,8 +79,7 @@ class AdminModelForm(djangoforms.ModelForm):
         return item
 
 
-
-def createAdminForm(formModel, editFields, editProps):
+def createAdminForm(formModel, editFields, editProps, readonlyFields):
     """AdminForm factory
         Input: formModel - model that will be used for ModelForm creation
             editFields - tuple of field names that should be exposed in the form
@@ -94,6 +88,7 @@ def createAdminForm(formModel, editFields, editProps):
         class Meta:
             model = formModel
             fields = editFields
+            exclude = readonlyFields
 
     # Adjust widgets by widget type
     logging.info("Ajusting widgets for AdminForm")
@@ -108,9 +103,9 @@ def createAdminForm(formModel, editFields, editProps):
             logging.info("  Adjusting field: %s; widget: %s" % (fieldName, field.widget.__class__))
             # Use custom widget with link "Add new" near dropdown box
             field.widget = admin_widgets.ReferenceSelect(
-                attrs = field.widget.attrs,
-                urlPrefix = None,
-                referenceKind = getattr(formModel, fieldName).reference_class.kind()
+                attrs=field.widget.attrs,
+                urlPrefix=None,
+                referenceKind=getattr(formModel, fieldName).reference_class.kind()
             )
             # Choices must be set after creating the widget because in our case choices
             # is not a list but a wrapeper around query that always fetches fresh data from datastore
@@ -127,11 +122,11 @@ def createAdminForm(formModel, editFields, editProps):
         if prop.typeName == 'DateTimeProperty':
             old = AdminForm.base_fields[prop.name]
             AdminForm.base_fields[prop.name] = SplitDateTimeField(
-                required = old.required,
-                widget = admin_widgets.AdminSplitDateTime,
-                label = old.label,
-                initial = old.initial,
-                help_text = old.help_text
+                required=old.required,
+                widget=admin_widgets.AdminSplitDateTime,
+                label=old.label,
+                initial=old.initial,
+                help_text=old.help_text,
             )
     return AdminForm
 
@@ -183,6 +178,7 @@ class FileField(forms.fields.Field):
         return file_content
 forms.fields.FileField = FileField
 forms.FileField = FileField
+
 
 ### HACK HACK HACK ###
 # djangoforms.ReferenceProperty.get_value_for_form() does not catch the error that occurs
@@ -238,7 +234,6 @@ class ModelMultipleChoiceField(forms.MultipleChoiceField):
         """Helper to copy the choices to the widget."""
         self.widget.choices = self.choices
 
-
     def _get_query(self):
         """Getter for the query attribute."""
         return self._query
@@ -257,7 +252,6 @@ class ModelMultipleChoiceField(forms.MultipleChoiceField):
         """
         for inst in self._query:
             yield (inst.key(), unicode(inst))
-
 
     def _get_choices(self):
         """Getter for the choices attribute.
@@ -294,6 +288,7 @@ class ModelMultipleChoiceField(forms.MultipleChoiceField):
             new_value.append(item)
         return new_value
 
+
 class SplitDateTimeField(forms.fields.SplitDateTimeField):
     def compress(self, data_list):
         """Checks additionaly if all necessary data is supplied
@@ -302,9 +297,29 @@ class SplitDateTimeField(forms.fields.SplitDateTimeField):
             return datetime.datetime.combine(*data_list)
         return None
 
+
 class MultipleChoiceField(forms.fields.MultipleChoiceField):
     def __init__(self, choices=(), required=True, widget=admin_widgets.SelectMultiple, label=None, initial=None, help_text=None):
         """Translates choices to Django style: [('key1', 'name1'), ('key2', 'name2')] instead of ['name1', 'name2']
         """
         choices = [(item, item) for item in choices]
         super(MultipleChoiceField, self).__init__(choices, required, widget, label, initial, help_text)
+
+
+class ListPropertyField(forms.fields.MultipleChoiceField):
+    def __init__(self, choices=(), required=True, widget=admin_widgets.AjaxListProperty, label=None, initial=None, help_text=None):
+        """Translates choices to Django style: [('key1', 'name1'), ('key2', 'name2')] instead of ['name1', 'name2']
+        """
+        choices = [(item, item) for item in choices]
+        super(ListPropertyField, self).__init__(choices, required, widget, label, initial, help_text)
+
+    def clean(self, value):
+      if self.choices:
+        return super(ListPropertyField, self).clean(value)
+      keys = []
+      for str_key in value:
+        if not str_key:
+          continue
+        keys.append(db.Key(str_key))
+      return keys
+      return keys

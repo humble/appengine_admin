@@ -45,35 +45,16 @@
             </table>
             <!-- paging -->
             <p>
-                {% ifnotequal page.first page.last %}
-                    {% ifnotequal page.first page.current %}
-                    <a href="?page={{page.first}}">First</a>
-                    {% else %}
-                    First
-                    {% endifnotequal %}
-                {% else %}
-                    First
-                {% endifnotequal %}
-                {% if page.prev %}
-                    <a href="?page={{page.prev}}">Previous</a>
+                {% if page.has_previous %}
+                    <a href="{{ page.get_previous_url }}">Previous</a>
                 {% else %}
                     Previous
                 {% endif %}
-                {{page.current}} of {{page.maxpages}}
-                {% if page.next %}
-                    <a href="?page={{page.next}}">Next</a>
+                {% if page.has_next %}
+                    <a href="{{ page.get_next_url }}">Next</a>
                 {% else %}
                     Next
                 {% endif %}
-                {% ifnotequal page.first page.last %}
-                    {% ifnotequal page.last page.current %}
-                    <a href="?page={{page.last}}">Last</a>
-                    {% else %}
-                    Last
-                    {% endifnotequal %}
-                {% else %}
-                    Last
-                {% endifnotequal %}
             </p>
             <!-- EOF paging -->
 {% endblock %}

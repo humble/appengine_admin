@@ -1,11 +1,10 @@
-"""
-Some utilities
-"""
+import os
 import pickle
-import logging
-import math
 
-from . import admin_settings
+import jinja2
+
+from appengine_admin import admin_settings
+
 
 def getBlobProperties(item, fieldName):
     props = getattr(item, fieldName + admin_settings.BLOB_FIELD_META_SUFFIX, None)
@@ -14,45 +13,52 @@ def getBlobProperties(item, fieldName):
     else:
         return None
 
+
 class Http404(Exception):
     code = 404
 
-class Http500(Exception):
-    code = 500
 
-class Page(object):
-    def __init__(self, modelAdmin, itemsPerPage = 20, currentPage = 1):
-        self.modelAdmin = modelAdmin
-        self.model = self.modelAdmin.model
-        self.itemsPerPage = int(itemsPerPage)
-        self.current = int(currentPage) # comes in as unicode
-        self.setPageNumbers()
-        logging.info("Paging: Maxpages: %r" % self.maxpages)
-        logging.info("Paging: Current: %r" % self.current)
+def import_path(path):
+    class_path, _, class_name = path.rpartition('.')
+    imported_module = __import__(class_path)
+    _, _, module_name = class_path.rpartition('.')
+    actual_module = getattr(imported_module, module_name)
+    return getattr(actual_module, class_name)
 
-    def setPageNumbers(self):
-        nItems = float(self.model.all().count())
-        logging.info('Paging: Items per page: %s' % self.itemsPerPage)
-        logging.info('Paging: Number of items %s' % int(nItems))
-        self.maxpages = int(math.ceil(nItems / float(self.itemsPerPage)))
-        if self.maxpages < 1:
-            self.maxpages = 1
-        # validate current page number
-        if self.current > self.maxpages or self.current < 1:
-            self.current = 1
-        if self.current > 1:
-            self.prev = self.current - 1
-        else:
-            self.prev = None
-        if self.current < self.maxpages:
-            self.next = self.current + 1
-        else:
-            self.next = None
-        self.first = 1
-        self.last = self.maxpages
 
-    def getDataForPage(self):
-        offset = int((self.current - 1) * self.itemsPerPage)
-        query = self.modelAdmin.listGql + ' LIMIT %i, %i' % (offset, self.itemsPerPage)
-        logging.info("Paging: GQL: %s" % query)
-        return self.model.gql(query)
+class Paginator(object):
+    def __init__(self, modelAdmin, itemsPerPage=20):
+        kwargs = {}
+        if hasattr(modelAdmin, 'paginate_on'):
+          kwargs['paginate_on'] = modelAdmin.paginate_on[0]
+        from appengine_admin import admin_settings
+        GenericPaginator = import_path(admin_settings.PAGINATOR_PATH)
+        paginator = GenericPaginator(
+            modelAdmin.model, expect_duplicates=modelAdmin.expect_duplicates,
+            per_page=itemsPerPage, **kwargs)
+        self.get_page = paginator.get_page
+
+
+config = {
+  'autoescape': True,  # better safe than sorry
+  'cache_size': -1,  # never clear the cache
+  'extensions': ['jinja2.ext.with_'],
+  # make None values output as empty strings
+  'finalize': lambda x: x if x is not None else '',
+}
+
+# Don't check for template updates in production
+if os.environ['SERVER_SOFTWARE'].startswith('Devel'):
+  config['auto_reload'] = True
+else:
+  config['auto_reload'] = False
+
+templates_path = [
+  os.path.join(os.path.dirname(__file__), 'templates'),
+]
+config['loader'] = jinja2.FileSystemLoader(templates_path)
+env = jinja2.Environment(**config)
+
+
+def render_template(path, template_kwargs={}):
+  return env.get_template(path).render(template_kwargs)

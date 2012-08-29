@@ -1,10 +1,5 @@
 /* Main Stylings */
 
-* {
-    margin:0;
-    padding:0;
-    }
-
 body {
     font-family: Verdana, Helvetica, Arial, sans-serif;
     font-size:13px;
@@ -149,6 +144,10 @@ td.delete_col {
 
 .editForm td {
     padding-right: 5px;
+  vertical-align: top;
+}
+.editForm th {
+  vertical-align: top;
 }
 
 .okButton input {
@@ -186,7 +185,7 @@ td.delete_col {
 }
 
 .adminTextInput, select {
-    width: 14em;
+    width: 450px;
 }
 
 /* CALENDARS & CLOCKS */
@@ -214,3 +213,19 @@ td.delete_col {
 .calendar-cancel a { padding:2px; color:#999; }
 ul.timelist, .timelist li { list-style-type:none; margin:0; padding:0; }
 .timelist a { padding:2px; }
+
+/* AJAX input widget */
+.ajax_select .remove {
+  cursor: pointer;
+  float: left;
+  margin-right: 10px;
+}
+.ajax_select .remove:hover {
+  color: red;
+}
+.ajax_select select {
+  float:left;
+}
+/* .ajax_select_add button{
+
+} */

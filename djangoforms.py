@@ -15,9 +15,6 @@
 # limitations under the License.
 #
 
-
-
-
 """Support for creating Django (new) forms from Datastore data models.
 
 This is our best shot at supporting as much of Django as possible: you
@@ -36,7 +33,7 @@ Django 0.97's API, even when used with Django 0.96 (which uses a
 different API, chiefly form_for_model()).
 
 Terminology notes:
-  - forms: always refers to the Django newforms subpackage
+  - forms: always refers to the Django forms subpackage
   - field: always refers to a Django forms.Field instance
   - property: always refers to a db.Property instance
 
@@ -80,47 +77,19 @@ Notes:
 *: this Field subclasses is defined by us, not in Django.
 """
 
-
-
-
-
-
-
-
 import itertools
-import logging
 
-
-
-
-
+from django import forms
 import django.core.exceptions
+from django.core.files import uploadedfile
 import django.utils.datastructures
-import db_extensions, admin_forms, admin_widgets
-
-
-try:
-  from django import newforms as forms
-  have_uploadedfile = False
-except ImportError:
-  from django import forms
-  from django.core.files import uploadedfile
-  have_uploadedfile = True
-
-
-
 try:
   from django.utils.translation import ugettext_lazy as _
 except ImportError:
   pass
-
-
-from google.appengine.api import users
 from google.appengine.ext import db
 
-
-
-
+from appengine_admin import db_extensions, admin_widgets
 
 
 def monkey_patch(name, bases, namespace):
@@ -147,20 +116,14 @@ def monkey_patch(name, bases, namespace):
 
   Note that PatchClass becomes an alias for TargetClass; by convention
   it is recommended to give PatchClass the same name as TargetClass.
+
   """
-
-
   assert len(bases) == 1, 'Exactly one base class is required'
   base = bases[0]
   for name, value in namespace.iteritems():
     if name not in ('__metaclass__', '__module__'):
       setattr(base, name, value)
   return base
-
-
-
-
-
 
 
 class Property(db.Property):
@@ -328,7 +291,7 @@ class BlobProperty(db.BlobProperty):
     This extracts the content from the UploadedFile instance returned
     by the FileField instance.
     """
-    if have_uploadedfile and isinstance(value, uploadedfile.UploadedFile):
+    if isinstance(value, uploadedfile.UploadedFile):
       if not self.form_value:
         self.form_value = value.read()
       b = db.Blob(self.form_value)
@@ -348,7 +311,8 @@ class DateTimeProperty(db.DateTimeProperty):
     """
     if self.auto_now or self.auto_now_add:
       return None
-    defaults = {'form_class': forms.DateTimeField}
+    defaults = {'form_class': forms.DateTimeField,
+                'widget': admin_widgets.AdminSplitDateTime}
     defaults.update(kwargs)
     return super(DateTimeProperty, self).get_form_field(**defaults)
 
@@ -436,18 +400,12 @@ class BooleanProperty(db.BooleanProperty):
     if value is None:
       return None
     if isinstance(value, basestring) and value.lower() == 'false':
-
-
       return False
     return bool(value)
 
 
 class StringListProperty(db.StringListProperty):
   __metaclass__ = monkey_patch
-
-
-
-
 
   def get_form_field(self, **kwargs):
     """Return a Django form field appropriate for a StringList property.
@@ -496,10 +454,33 @@ class LinkProperty(db.LinkProperty):
     return super(LinkProperty, self).get_form_field(**defaults)
 
 
+class ListProperty(db.ListProperty):
+  __metaclass__ = monkey_patch
+
+  def get_form_field(self, **kwargs):
+      """Return a Django form field appropriate for a ListProperty."""
+      # import pdb; pdb.set_trace()
+      from appengine_admin import admin_forms
+      defaults = {'form_class': admin_forms.ListPropertyField,
+                  'widget': admin_widgets.AjaxListProperty,
+                  }
+      defaults.update(kwargs)
+      return super(ListProperty, self).get_form_field(**defaults)
+
+  def get_value_for_form(self, instance):
+      value = super(ListProperty, self).get_value_for_form(instance)
+      if not value:
+          return None
+      if isinstance(value, basestring):
+          value = value.splitlines()
+      return value
+
+
 class ManyToManyProperty(db_extensions.ManyToManyProperty):
     __metaclass__ = monkey_patch
 
     def get_form_field(self, **kwargs):
+        from appengine_admin import admin_forms
         defaults = {'form_class': admin_forms.ModelMultipleChoiceField,
                     'reference_class': self.reference_class,
                     'required': False}
@@ -510,12 +491,12 @@ class ManyToManyProperty(db_extensions.ManyToManyProperty):
 class StringListChoicesProperty(db_extensions.StringListChoicesProperty):
     __metaclass__ = monkey_patch
 
-
     def get_form_field(self, **kwargs):
         """Return a Django form field appropriate for a StringList property.
 
         This defaults to a Textarea widget with a blank initial value.
         """
+        from appengine_admin import admin_forms
         defaults = {'form_class': admin_forms.MultipleChoiceField,
                     'choices': self.choices,
                     'widget': admin_widgets.SelectMultiple,
@@ -583,8 +564,6 @@ class ModelChoiceField(forms.Field):
     """Helper to copy the choices to the widget."""
     self.widget.choices = self.choices
 
-
-
   def _get_query(self):
     """Getter for the query attribute."""
     return self._query
@@ -602,14 +581,10 @@ class ModelChoiceField(forms.Field):
   def _generate_choices(self):
     """Generator yielding (key, label) pairs from the query results."""
 
-
     yield ('', self.empty_label)
-
 
     for inst in self._query:
       yield (inst.key(), unicode(inst))
-
-
 
   def _get_choices(self):
     """Getter for the choices attribute.
@@ -708,9 +683,6 @@ def property_clean(prop, value):
   """
   if value is not None:
     try:
-
-
-
       prop.validate(prop.make_value_from_form(value))
     except (db.BadValueError, ValueError), e:
       raise forms.ValidationError(unicode(e))
@@ -727,10 +699,6 @@ class ModelFormOptions(object):
   These instance attributes are copied from the 'Meta' class that is
   usually present in a ModelForm class, and all default to None.
   """
-
-
-
-
   def __init__(self, options=None):
     self.model = getattr(options, 'model', None)
     self.fields = getattr(options, 'fields', None)
@@ -763,8 +731,6 @@ class ModelFormMetaclass(type):
                      if isinstance(obj, forms.Field)),
                     key=lambda obj: obj[1].creation_counter)
 
-
-
     for base in bases[::-1]:
       if hasattr(base, 'base_fields'):
         fields = base.base_fields.items() + fields
@@ -774,9 +740,6 @@ class ModelFormMetaclass(type):
 
     opts = ModelFormOptions(attrs.get('Meta', None))
     attrs['_meta'] = opts
-
-
-
 
     base_models = []
     for base in bases:
@@ -788,12 +751,7 @@ class ModelFormMetaclass(type):
       raise django.core.exceptions.ImproperlyConfigured(
           "%s's base classes define more than one model." % class_name)
 
-
-
     if opts.model is not None:
-
-
-
       if base_models and base_models[0] is not opts.model:
         raise django.core.exceptions.ImproperlyConfigured(
             '%s defines a different model than its parent.' % class_name)
@@ -809,19 +767,13 @@ class ModelFormMetaclass(type):
         if form_field is not None:
           model_fields[name] = form_field
 
-
       model_fields.update(declared_fields)
       attrs['base_fields'] = model_fields
-
-
 
       props = opts.model.properties()
       for name, field in model_fields.iteritems():
         prop = props.get(name)
         if prop:
-
-
-
           if hasattr(forms, 'FileField') and isinstance(field, forms.FileField):
             def clean_for_property_field(value, initial, prop=prop,
                                          old_clean=field.clean):
@@ -885,9 +837,6 @@ class BaseModelForm(forms.BaseForm):
 
       object_data.update(initial)
 
-
-
-
     kwargs = dict(data=data, files=files, auto_id=auto_id,
                   prefix=prefix, initial=object_data,
                   error_class=error_class, label_suffix=label_suffix)
@@ -949,8 +898,6 @@ class BaseModelForm(forms.BaseForm):
       raise ValueError('The %s could not be %s (%s)' %
                        (opts.model.kind(), fail_message, err))
     if commit:
-
-
       instance.put()
     return instance
 

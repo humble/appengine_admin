@@ -1,14 +1,15 @@
+from django import forms
+from google.appengine.ext import db
 from webob.multidict import UnicodeMultiDict
-try:
-    from django import newforms as forms
-except ImportError:
-    from django import forms
+
+from appengine_admin import utils
+
 
 class ReferenceSelect(forms.widgets.Select):
     """Customized Select widget that adds link "Add new" near dropdown box.
         This widget should be used for ReferenceProperty support only.
     """
-    def __init__(self, urlPrefix = '', referenceKind = '', *attrs, **kwattrs):
+    def __init__(self, urlPrefix='', referenceKind='', *attrs, **kwattrs):
         super(ReferenceSelect, self).__init__(*attrs, **kwattrs)
         self.urlPrefix = urlPrefix
         self.referenceKind = referenceKind
@@ -39,7 +40,7 @@ class FileInput(forms.widgets.Input):
     def __copy__(self):
         return FileInput(*self.__args, **self.__kwargs)
 
-    def render(self, name, value, attrs = None):
+    def render(self, name, value, attrs=None):
         """Overrides render() method in order to attach file download
             link if file already uploaded.
         """
@@ -65,15 +66,16 @@ class FileInput(forms.widgets.Input):
         return True
 
 
-
 ### These are taken from Django 1.0 contrib.admin.widgets
 class AdminDateWidget(forms.TextInput):
     def __init__(self, attrs={}):
         super(AdminDateWidget, self).__init__(attrs={'class': 'vDateField', 'size': '10'})
 
+
 class AdminTimeWidget(forms.TextInput):
     def __init__(self, attrs={}):
         super(AdminTimeWidget, self).__init__(attrs={'class': 'vTimeField', 'size': '8'})
+
 
 class AdminSplitDateTime(forms.SplitDateTimeWidget):
     """
@@ -89,8 +91,78 @@ class AdminSplitDateTime(forms.SplitDateTimeWidget):
         return u'<p class="datetime">%s %s<br />%s %s</p>' % \
             ('Date:', rendered_widgets[0], 'Time:', rendered_widgets[1])
 
+
 class SelectMultiple(forms.SelectMultiple):
     def value_from_datadict(self, data, files, name):
         if isinstance(data, UnicodeMultiDict):
             return data.getall(name)
         return data.get(name, None)
+## END Django 1.0 widgets
+
+
+class AjaxListProperty(forms.Widget):
+  def render(self, name, value, attrs=None):
+    objects = []
+    object_classes = {}
+
+    keys = value or []
+    for key in keys:
+      if not key:
+        continue
+      # Turn string keys into Key objects
+      if isinstance(key, basestring):
+        key = db.Key(key)
+      obj = db.get(key)
+      obj.url = get_model_instance_url(obj)
+      obj.class_name = obj.__class__.__name__
+      objects.append((key, obj))
+      object_classes[obj.class_name] = obj.__class__
+
+    from django.forms.util import flatatt
+    final_attrs = self.build_attrs(attrs, name=name)
+    flat_attrs = flatatt(final_attrs)
+
+    return utils.render_template('widgets/ajax_list_property.html', {
+      'flat_attrs': flat_attrs,
+      'objects': objects,
+      'object_classes': object_classes,
+      'name': name,
+      'paged_selector': paged_selector,
+    })
+
+  def value_from_datadict(self, data, files, name):
+    if isinstance(data, UnicodeMultiDict):
+      return data.getall(name)
+
+    from django.utils.datastructures import MultiValueDict, MergeDict
+    if isinstance(data, (MultiValueDict, MergeDict)):
+      return data.getlist(name)
+
+    data_list = data.get(name, None)
+    if isinstance(data, (list, tuple)):
+      return data_list
+    return [data_list]
+
+  def _has_changed(self, initial, data):
+    # TODO: implement properly
+    from django.utils.encoding import force_unicode
+    if initial is None:
+      initial = []
+    if data is None:
+      data = []
+    if len(initial) != len(data):
+      return True
+    initial_set = set([force_unicode(value) for value in initial])
+    data_set = set([force_unicode(value) for value in data])
+    return data_set != initial_set
+
+
+def get_model_instance_url(model_instance):
+  return '/admin/models/%s/edit/%s/' % (model_instance.__class__.__name__, model_instance.key())
+
+
+def paged_selector(cls):
+  from appengine_admin import admin_settings
+  from appengine_admin.utils import import_path
+  Paginator = import_path(admin_settings.PAGINATOR_PATH)
+  return Paginator(cls).get_page({}, base_url='/admin/models/Product')

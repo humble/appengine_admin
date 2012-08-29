@@ -15,3 +15,6 @@ MAX_BLOB_SIZE = 1 * 1024 * 1024
 
 # Suffix for BlobProperty meta info storage.
 BLOB_FIELD_META_SUFFIX = '_meta'
+
+# Path to the paginator class
+PAGINATOR_PATH = 'gae_paginator.Paginator'
