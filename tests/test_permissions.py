@@ -13,6 +13,13 @@ class TestHandler(webapp2.RequestHandler):
       url = '/test'
     self.request = Request()
 
+    class Response(object):
+      status = 200
+
+      def clear(*args, **kwargs):
+        pass
+    self.response = Response()
+
   def get(self, *args, **kwargs):
     return 'success!'
 
