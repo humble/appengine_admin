@@ -2,16 +2,17 @@ import logging
 import pickle
 import copy
 import datetime
-import djangoforms
 from google.appengine.api import datastore_errors
 from google.appengine.ext import db
+from google.appengine.ext.db import djangoforms
 from django import forms
 from django.forms.util import ValidationError
 from django.utils.translation import gettext as _
 
-from . import admin_widgets
-from . import utils
 from . import admin_settings
+from . import admin_widgets
+from . import db_extensions
+from . import utils
 
 MAX_BLOB_SIZE = admin_settings.MAX_BLOB_SIZE
 BLOB_FIELD_META_SUFFIX = admin_settings.BLOB_FIELD_META_SUFFIX
@@ -180,19 +181,17 @@ forms.fields.FileField = FileField
 forms.FileField = FileField
 
 
-### HACK HACK HACK ###
-# djangoforms.ReferenceProperty.get_value_for_form() does not catch the error that occurs
-# when referenced item is deleted.
-# This "monkey patch" fixes the problem.
 def _wrapped_get_value_for_form(self, instance):
-    """Catch "ReferenceProperty failed to be resolved" error and return None.
+    """Handle missing ReferenceProperty values.
+
+    djangoforms.ReferenceProperty.get_value_for_form() does not catch the error
+    that occurs when a referenced item is deleted.
     """
     try:
         return _original_get_value_for_form(self, instance)
-    except datastore_errors.Error, exc:
-        # Error is raised if referenced property is deleted
-        # Catch the exception and set value to none
-        logging.warning('Error catched while getting item values: %s' % exc)
+    except datastore_errors.ReferencePropertyResolveError:
+        # If the ReferenceProperty is deleted, an exception is raised.
+        # Catch it and return None.
         return  None
 
 _original_get_value_for_form = djangoforms.ReferenceProperty.get_value_for_form
@@ -323,3 +322,60 @@ class ListPropertyField(forms.fields.MultipleChoiceField):
         keys.append(db.Key(str_key))
       return keys
       return keys
+
+
+class ListProperty(db.ListProperty):
+  __metaclass__ = djangoforms.monkey_patch
+
+  def get_form_field(self, **kwargs):
+    '''Return a Django form field appropriate for a ListProperty.'''
+    defaults = {'form_class': ListPropertyField,
+                'widget': admin_widgets.AjaxListProperty}
+    defaults.update(kwargs)
+    return super(ListProperty, self).get_form_field(**defaults)
+
+  def get_value_for_form(self, instance):
+    value = super(ListProperty, self).get_value_for_form(instance)
+    if not value:
+      return None
+    if isinstance(value, basestring):
+      value = value.splitlines()
+    return value
+
+
+class StringListChoicesProperty(db_extensions.StringListChoicesProperty):
+    __metaclass__ = djangoforms.monkey_patch
+
+    def get_form_field(self, **kwargs):
+        """Return a Django form field appropriate for a StringList property.
+
+        This defaults to a Textarea widget with a blank initial value.
+        """
+        defaults = {'form_class': MultipleChoiceField,
+                    'choices': self.choices,
+                    'widget': admin_widgets.SelectMultiple}
+        defaults.update(kwargs)
+        return super(StringListChoicesProperty, self).get_form_field(**defaults)
+
+    def get_value_for_form(self, instance):
+        value = super(StringListChoicesProperty, self).get_value_for_form(instance)
+        if not value:
+            return None
+        if isinstance(value, basestring):
+            value = value.splitlines()
+        return value
+
+
+class DateTimeProperty(djangoforms.DateTimeProperty):
+  __metaclass__ = djangoforms.monkey_patch
+
+  def get_form_field(self, **kwargs):
+    '''Return a Django form field appropriate for a date-time property.
+
+    This defaults to a DateTimeField instance, except if auto_now or
+    auto_now_add is set, in which case None is returned, as such
+    'auto' fields should not be rendered as part of the form.
+    '''
+    defaults = {'widget': admin_widgets.AdminSplitDateTime}
+    defaults.update(kwargs)
+    return super(DateTimeProperty, self).get_form_field(**defaults)
