@@ -21,6 +21,8 @@ class PropertyWrapper(object):
           self.prop = property_or_callback
           self.name = getattr(property_or_callback, '__name__', None) or property_or_callback.__class__.__name__
         self.verbose_name = getattr(self.prop, 'verbose_name', None) or self.name
+        if self.verbose_name.lower() == self.verbose_name:
+          self.verbose_name = self.verbose_name.capitalize().replace('_', ' ')
         self.typeName = self.prop.__class__.__name__
 
     def getter(self, item):
