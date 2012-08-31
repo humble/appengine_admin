@@ -144,7 +144,7 @@ class Admin(BaseRequestHandler):
                 logging.info("%s :: %s" % (prop.name, prop.value))
         return readonlyProperties
 
-    @authorized.role("admin")
+    @authorized.check()
     def index_get(self):
         """Show admin start page
         """
@@ -154,7 +154,7 @@ class Admin(BaseRequestHandler):
             'urlPrefix': self.urlPrefix,
         }))
 
-    @authorized.role("admin")
+    @authorized.check()
     def list_get(self, modelName):
         """Show list of records for particular model
         """
@@ -176,7 +176,7 @@ class Admin(BaseRequestHandler):
             'page': page,
         }))
 
-    @authorized.role("admin")
+    @authorized.check()
     def new_get(self, modelName):
         """Show form for creating new record of particular model
         """
@@ -193,7 +193,7 @@ class Admin(BaseRequestHandler):
         path = os.path.join(ADMIN_TEMPLATE_DIR, 'model_item_edit.html')
         self.response.out.write(template.render(path, templateValues))
 
-    @authorized.role("admin")
+    @authorized.check()
     def new_post(self, modelName):
         """Create new record of particular model
         """
@@ -216,7 +216,7 @@ class Admin(BaseRequestHandler):
             path = os.path.join(ADMIN_TEMPLATE_DIR, 'model_item_edit.html')
             self.response.out.write(template.render(path, templateValues))
 
-    @authorized.role("admin")
+    @authorized.check()
     def edit_get(self, modelName, key=None):
         """Show for for editing existing record of particular model.
             Raises Http404 if record not found.
@@ -234,7 +234,7 @@ class Admin(BaseRequestHandler):
         path = os.path.join(ADMIN_TEMPLATE_DIR, 'model_item_edit.html')
         self.response.out.write(template.render(path, templateValues))
 
-    @authorized.role("admin")
+    @authorized.check()
     def edit_post(self, modelName, key):
         """Save details for already existing record of particular model.
             Raises Http404 if record not found.
@@ -258,7 +258,7 @@ class Admin(BaseRequestHandler):
             path = os.path.join(ADMIN_TEMPLATE_DIR, 'model_item_edit.html')
             self.response.out.write(template.render(path, templateValues))
 
-    @authorized.role("admin")
+    @authorized.check()
     def delete_get(self, modelName, key):
         """Delete record of particular model.
             Raises Http404 if record not found.
@@ -268,7 +268,7 @@ class Admin(BaseRequestHandler):
         item.delete()
         self.redirect("%s/%s/list/" % (self.urlPrefix, modelAdmin.modelName))
 
-    @authorized.role("admin")
+    @authorized.check()
     def get_blob_contents(self, modelName, fieldName, key):
         """Returns blob field contents to user for downloading.
         """

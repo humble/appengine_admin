@@ -18,3 +18,6 @@ BLOB_FIELD_META_SUFFIX = '_meta'
 
 # Path to the paginator class
 PAGINATOR_PATH = 'gae_paginator.Paginator'
+
+# Set this to your custom access callback
+# ACCESS_CALLBACK = some_func

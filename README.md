@@ -59,6 +59,8 @@
     ], config=app_config, debug=DEBUG)
     ```
 
+4. To configure your settings, look at [`admin_settings.py`](https://github.com/humble/appengine-admin/blob/master/admin_settings.py)
+
 For more details, see the [QuickStart](http://code.google.com/p/appengine-admin/wiki/QuickStart) on Google Code.
 
 ## <span name="features">Features</span>
