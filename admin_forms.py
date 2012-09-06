@@ -25,11 +25,11 @@ class AdminModelForm(djangoforms.ModelForm):
         super(AdminModelForm, self).__init__(*args, **kwargs)
         instance = kwargs.get('instance', None)
 
-        for fieldName, field in self.fields.items():
+        for field_name, field in self.fields.items():
             # deliver meta info to FileInput widget for file download link display
             # do it only if file is uploaded :)
-            if instance and isinstance(field.widget, admin_widgets.FileInput) and getattr(instance, fieldName):
-                meta = utils.get_blob_properties(instance, fieldName)
+            if instance and isinstance(field.widget, admin_widgets.FileInput) and getattr(instance, field_name):
+                meta = utils.get_blob_properties(instance, field_name)
                 if meta:
                     fileName = meta['File_Name']
                 else:
@@ -38,11 +38,11 @@ class AdminModelForm(djangoforms.ModelForm):
                 field = copy.copy(field)
                 widget = copy.copy(field.widget)
                 field.widget = widget
-                self.fields[fieldName] = field
+                self.fields[field_name] = field
                 # set uploaded file meta data
                 widget.show_download_url = True
                 widget.model_name = instance.kind()
-                widget.fieldName = fieldName
+                widget.field_name = field_name
                 widget.itemKey = instance.key()
                 widget.fileName = fileName
 
@@ -69,9 +69,9 @@ class AdminModelForm(djangoforms.ModelForm):
         """The overrided method adds uploaded file meta info for BlobProperty fields.
         """
         item = super(AdminModelForm, self).save(*args, **kwargs)
-        for fieldName, field in self.fields.items():
+        for field_name, field in self.fields.items():
             if isinstance(field, FileField) and field.file_name is not None:
-                metaFieldName = fieldName + BLOB_FIELD_META_SUFFIX
+                metaFieldName = field_name + BLOB_FIELD_META_SUFFIX
                 if getattr(self.Meta.model, metaFieldName, None):
                     metaData = {
                         'Content_Type': field.file_type,
@@ -82,8 +82,8 @@ class AdminModelForm(djangoforms.ModelForm):
                     setattr(item, metaFieldName, pickle.dumps(metaData))
                 else:
                     logging.info(
-                      'Cache field "%(metaFieldName)s" for blob property "%(propertyName)s" not found. Add field "%(metaFieldName)s" to model "%(model_name)s" if you want to store meta info about the uploaded file',
-                      {'metaFieldName': metaFieldName, 'propertyName': fieldName, 'model_name': self.Meta.model.kind()}
+                      'Cache field "%(metaFieldName)s" for blob property "%(field_name)s" not found. Add field "%(metaFieldName)s" to model "%(model_name)s" if you want to store meta info about the uploaded file',
+                      {'metaFieldName': metaFieldName, 'field_name': field_name, 'model_name': self.Meta.model.kind()}
                     )
 
         if self.dynamic_properties:
@@ -98,26 +98,26 @@ class AdminModelForm(djangoforms.ModelForm):
         return item
 
 
-def createAdminForm(formModel, editFields, editProps, readonlyFields):
+def createAdminForm(form_model, edit_fields, edit_props, readonly_fields):
     """AdminForm factory
-        Input: formModel - model that will be used for ModelForm creation
-            editFields - tuple of field names that should be exposed in the form
+        Input: form_model - model that will be used for ModelForm creation
+            edit_fields - tuple of field names that should be exposed in the form
     """
     class AdminForm(AdminModelForm):
         class Meta:
-            model = formModel
-            fields = editFields
-            exclude = readonlyFields
+            model = form_model
+            fields = edit_fields
+            exclude = readonly_fields
 
     # Adjust widgets by widget type
     logging.info("Ajusting widgets for AdminForm")
-    for fieldName, field in AdminForm.base_fields.items():
+    for field_name, field in AdminForm.base_fields.items():
         if isinstance(field, djangoforms.ModelChoiceField):
-            logging.info("  Adjusting field: %s; widget: %s" % (fieldName, field.widget.__class__))
+            logging.info("  Adjusting field: %s; widget: %s" % (field_name, field.widget.__class__))
             # Use custom widget with link "Add new" near dropdown box
             field.widget = admin_widgets.ReferenceSelect(
                 attrs=field.widget.attrs,
-                reference_kind=getattr(formModel, fieldName).reference_class.kind()
+                reference_kind=getattr(form_model, field_name).reference_class.kind()
             )
             # Choices must be set after creating the widget because in our case choices
             # is not a list but a wrapeper around query that always fetches fresh data from datastore
@@ -126,7 +126,7 @@ def createAdminForm(formModel, editFields, editProps, readonlyFields):
             AdminForm.enctype = 'multipart/form-data'
 
     # Adjust widgets by property type
-    for prop in editProps:
+    for prop in edit_props:
         if prop.typeName == 'DateProperty':
             AdminForm.base_fields[prop.name].widget = admin_widgets.AdminDateWidget()
         if prop.typeName == 'TimeProperty':
@@ -392,6 +392,12 @@ class DateTimeProperty(djangoforms.DateTimeProperty):
     return super(DateTimeProperty, self).get_form_field(**defaults)
 
   def make_value_from_form(self, value):
+    '''Override djangoforms' default value handling for DateTimeProperty.
+
+    TODO: Fix the double representation.
+    It appears that the received value can either be a list ['date string', 'time string'], or its string representation "['date string', 'time string']"
+
+    '''
     if isinstance(value, basestring):
       import ast
       try:

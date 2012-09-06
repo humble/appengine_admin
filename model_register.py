@@ -42,16 +42,16 @@ class ModelAdmin(object):
         Available settings:
         model - db.model derived class that describes your data model
         expect_duplicates - for pagination
-        listFields - list of field names that should be shown in list view
-        editFields - list of field names that that should be used as editable fields in admin interface
-        readonlyFields - list of field names that should be used as read-only fields in admin interface
+        list_fields - list of field names that should be shown in list view
+        edit_fields - list of field names that that should be used as editable fields in admin interface
+        readonly_fields - list of field names that should be used as read-only fields in admin interface
         listGql - GQL statement for record ordering/filtering/whatever_else in list view
     """
     model = None
     expect_duplicates = False
-    listFields = ()
-    editFields = ()
-    readonlyFields = ()
+    list_fields = ()
+    edit_fields = ()
+    readonly_fields = ()
     listGql = ''
     AdminForm = None
 
@@ -63,20 +63,20 @@ class ModelAdmin(object):
         self._editProperties = []
         self._readonly_properties = []
         # extract properties from model by propery names
-        self._extractProperties(self.listFields, self._list_properties)
-        self._extractProperties(self.editFields, self._editProperties)
-        self._extractProperties(self.readonlyFields, self._readonly_properties)
+        self._extractProperties(self.list_fields, self._list_properties)
+        self._extractProperties(self.edit_fields, self._editProperties)
+        self._extractProperties(self.readonly_fields, self._readonly_properties)
         if self.AdminForm is None:
             self.AdminForm = admin_forms.createAdminForm(
-                formModel=self.model,
-                editFields=self.editFields,
-                editProps=self._editProperties,
-                readonlyFields=self.readonlyFields
+                form_model=self.model,
+                edit_fields=self.edit_fields,
+                edit_props=self._editProperties,
+                readonly_fields=self.readonly_fields
             )
 
     def _extractProperties(self, field_names, storage):
-        for propertyName in field_names:
-            storage.append(PropertyWrapper(self.model, propertyName))
+        for field_name in field_names:
+            storage.append(PropertyWrapper(self.model, field_name))
 
     def _attachListFields(self, item):
         """Attaches property instances for list fields to given data entry.
@@ -120,10 +120,10 @@ def register(*args):
         In case if more ModelAdmin instances with same model are registered
         last registered instance will be the active one.
     """
-    for model_adminClass in args:
-        model_adminInstance = model_adminClass()
+    for model_admin_class in args:
+        model_adminInstance = model_admin_class()
         _model_register[model_adminInstance.model_name] = model_adminInstance
-        logging.info("Registering AdminModel '%s' for model '%s'" % (model_adminClass.__name__, model_adminInstance.model_name))
+        logging.info("Registering AdminModel '%s' for model '%s'" % (model_admin_class.__name__, model_adminInstance.model_name))
 
 
 def get_model_admin(model_name):
