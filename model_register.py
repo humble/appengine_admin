@@ -22,7 +22,7 @@ class PropertyWrapper(object):
           self.name = getattr(property_or_callback, '__name__', None) or property_or_callback.__class__.__name__
         self.verbose_name = getattr(self.prop, 'verbose_name', None) or self.name
         if self.verbose_name.lower() == self.verbose_name:
-          self.verbose_name = self.verbose_name.capitalize().replace('_', ' ')
+          self.verbose_name = utils.get_human_name(self.verbose_name)
         self.typeName = self.prop.__class__.__name__
 
     def getter(self, item):
@@ -58,14 +58,14 @@ class ModelAdmin(object):
     def __init__(self):
         super(ModelAdmin, self).__init__()
         # Cache model name as string
-        self.modelName = str(self.model.kind())
-        self._listProperties = []
+        self.model_name = str(self.model.kind())
+        self._list_properties = []
         self._editProperties = []
-        self._readonlyProperties = []
+        self._readonly_properties = []
         # extract properties from model by propery names
-        self._extractProperties(self.listFields, self._listProperties)
+        self._extractProperties(self.listFields, self._list_properties)
         self._extractProperties(self.editFields, self._editProperties)
-        self._extractProperties(self.readonlyFields, self._readonlyProperties)
+        self._extractProperties(self.readonlyFields, self._readonly_properties)
         if self.AdminForm is None:
             self.AdminForm = admin_forms.createAdminForm(
                 formModel=self.model,
@@ -74,20 +74,20 @@ class ModelAdmin(object):
                 readonlyFields=self.readonlyFields
             )
 
-    def _extractProperties(self, fieldNames, storage):
-        for propertyName in fieldNames:
+    def _extractProperties(self, field_names, storage):
+        for propertyName in field_names:
             storage.append(PropertyWrapper(self.model, propertyName))
 
     def _attachListFields(self, item):
         """Attaches property instances for list fields to given data entry.
             This is used in Admin class view methods.
         """
-        item.listProperties = copy.deepcopy(self._listProperties[:])
-        for prop in item.listProperties:
+        item.list_properties = copy.deepcopy(self._list_properties[:])
+        for prop in item.list_properties:
             try:
                 prop.value = prop.getter(item)
                 if prop.typeName == 'BlobProperty':
-                    prop.meta = utils.getBlobProperties(item, prop.name)
+                    prop.meta = utils.get_blob_properties(item, prop.name)
                     if prop.value:
                         prop.value = True  # release the memory
                 if prop.typeName == 'ManyToManyProperty':
@@ -111,7 +111,7 @@ class ModelAdmin(object):
 
 
 # holds model_name -> ModelAdmin_instance mapping.
-_modelRegister = {}
+_model_register = {}
 
 
 def register(*args):
@@ -120,18 +120,18 @@ def register(*args):
         In case if more ModelAdmin instances with same model are registered
         last registered instance will be the active one.
     """
-    for modelAdminClass in args:
-        modelAdminInstance = modelAdminClass()
-        _modelRegister[modelAdminInstance.modelName] = modelAdminInstance
-        logging.info("Registering AdminModel '%s' for model '%s'" % (modelAdminClass.__name__, modelAdminInstance.modelName))
+    for model_adminClass in args:
+        model_adminInstance = model_adminClass()
+        _model_register[model_adminInstance.model_name] = model_adminInstance
+        logging.info("Registering AdminModel '%s' for model '%s'" % (model_adminClass.__name__, model_adminInstance.model_name))
 
 
-def getModelAdmin(modelName):
+def get_model_admin(model_name):
     """Get ModelAdmin instance for particular model by model name (string).
         Raises Http404 exception if not found.
         This function is used internally by appengine_admin
     """
     try:
-        return _modelRegister[modelName]
+        return _model_register[model_name]
     except KeyError:
         raise Http404()

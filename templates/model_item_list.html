@@ -1,60 +1,60 @@
-﻿{% extends "admin_base.html" %}
+﻿{% extends 'admin_base.html' %}
 
 {% block content %}
-            <h2>Admin :: {{ moduleTitle }}</h2>
-            <p class="createNew"><a href="{{ urlPrefix }}/{{ moduleTitle }}/new/">Create new</a></p>
-            <table class="itemList" cellspacing="0">
-                <thead>
-                <tr>
-                    {% for property in listProperties %}
-                    <th>{{property.verbose_name}}</th>
-                    {% endfor %}
-                    <th>&nbsp;</th>
-                </tr>
-                </thead>
-                <tbody>
-                {% for item in items %}
-                <tr>
-                    {% for property in item.listProperties %}
-                    {% if forloop.first %}
-                    <td><a href="{{ urlPrefix }}/{{ moduleTitle }}/edit/{{ item.key }}/">
-                        {% ifequal property.typeName "BlobProperty" %}
-                        Binary content
-                        {% else %}
-                        {{ property.value|escape }}
-                        {% endifequal %}
-                    </a></td>
-                    {% else %}
-                    <td>
-                        {% ifequal property.typeName "BlobProperty" %}
-                            {% if property.value %}
-                                <a href="{{urlPrefix}}/{{moduleTitle}}/get_blob_contents/{{property.name}}/{{ item.key }}/">File uploaded: {{property.meta.File_Name}}</a>
-                            {% else %}
-                            None
-                            {% endif %}
-                        {% else %}
-                            {{ property.value|escape }}
-                        {% endifequal %}
-                    </td>
-                    {% endif %}
-                    {% endfor %}
-                    <td><a href="{{ urlPrefix }}/{{ moduleTitle }}/delete/{{ item.key }}/" onclick='return confirm("Are you sure?");'>Delete</a></td>
-                </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-            <!-- paging -->
-            <p>
-                {% if page.has_previous %}
-                    <a href="{{ page.get_previous_url }}">Previous</a>
-                {% else %}
-                    Previous
-                {% endif %}
-                {% if page.has_next %}
-                    <a href="{{ page.get_next_url }}">Next</a>
-                {% else %}
-                    Next
-                {% endif %}
-            </p>
-            <!-- EOF paging -->
+  <h2><a href='{{ uri_for('index') }}'>Admin</a> :: <a href='{{ uri_for('list', model_name=model_name) }}'>{{ model_name }}</a></h2>
+  <p class='createNew'><a href='{{ uri_for('new', model_name=model_name) }}'>Create new</a></p>
+  <table class='itemList' cellspacing='0'>
+    <tr>
+{% for property in list_properties %}
+      <th>{{ property.verbose_name }}</th>
+{% endfor %}
+      <th> </th>
+    </tr>
+{% for item in items %}
+    <tr>
+  {% for property in item.list_properties %}
+    {% if loop.first %}
+      <td><a href='{{ uri_for('edit', model_name=model_name, key=item.key() }}'>
+      {% if property.typeName == 'BlobProperty' %}
+        Binary content
+      {% else %}
+        {{ property.value|escape }}
+      {% endif %}
+      </a></td>
+    {% else %}
+      <td>
+        {% if property.typeName == 'BlobProperty' %}
+          {% if property.value %}
+        <a href='{{ uri_for('blob', model_name=model_name, field_name=property.name, key=item.key()) }}'>File uploaded: {{property.meta.File_Name}}</a>
+          {% else %}
+        None
+        {% endif %}
+      {% else %}
+        {{ property.value|escape }}
+      {% endif %}
+      </td>
+    {% endif %}
+  {% endfor %}
+      <td>
+        <form action='{{ uri_for('delete', model_name=model_name, key=item.key()) }}' method='POST' onsubmit='return confirm("Are you sure?");'/>
+          <input type='submit' name='delete' value='Delete'/>
+        </form>
+      </td>
+    </tr>
+{% endfor %}
+  </table>
+  <!-- paging -->
+  <p>
+{% if page.has_previous() %}
+    <a href='{{ page.get_previous_url() }}'>Previous</a>
+{% else %}
+    Previous
+{% endif %}
+{% if page.has_next() %}
+    <a href='{{ page.get_next_url() }}'>Next</a>
+{% else %}
+    Next
+{% endif %}
+  </p>
+  <!-- END paging -->
 {% endblock %}

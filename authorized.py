@@ -1,7 +1,7 @@
 ﻿def check(*check_args, **check_kwargs):
   def wrapper(handler_method):
     def check_wrapper(self, *args, **kwargs):
-      from appengine_admin import admin_settings
+      from . import admin_settings
       callback = getattr(admin_settings, 'ACCESS_CALLBACK', is_google_admin)
       return callback(self, handler_method=handler_method,
                       check_args=check_args, check_kwargs=check_kwargs, args=args, **kwargs)

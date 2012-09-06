@@ -142,11 +142,11 @@ td.delete_col {
     width: 40px;
 }
 
-.editForm td {
-    padding-right: 5px;
+.admin-form td {
+  padding-right: 5px;
   vertical-align: top;
 }
-.editForm th {
+.admin-form th {
   vertical-align: top;
 }
 
@@ -180,12 +180,15 @@ td.delete_col {
     list-style-type: none;
 }
 
-.adminTextarea {
-    width: 450px;
+.admin-form textarea,
+.admin-form input[type=text],
+.admin-form select {
+  width: 450px;
 }
 
-.adminTextInput, select {
-    width: 450px;
+body .admin-form .admin-date-widget,
+body .admin-form .admin-time-widget {
+  width: 100px;
 }
 
 /* CALENDARS & CLOCKS */

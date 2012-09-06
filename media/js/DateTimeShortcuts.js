@@ -1,6 +1,6 @@
 // Inserts shortcut buttons after all of the following:
-//     <input type="text" class="vDateField">
-//     <input type="text" class="vTimeField">
+//     <input type="text" class="admin-date-widget">
+//     <input type="text" class="admin-time-widget">
 
 var DateTimeShortcuts = {
     calendars: [],
@@ -27,10 +27,10 @@ var DateTimeShortcuts = {
         var inputs = document.getElementsByTagName('input');
         for (i=0; i<inputs.length; i++) {
             var inp = inputs[i];
-            if (inp.getAttribute('type') == 'text' && inp.className.match(/vTimeField/)) {
+            if (inp.getAttribute('type') == 'text' && inp.className.match(/admin-time-widget/)) {
                 DateTimeShortcuts.addClock(inp);
             }
-            else if (inp.getAttribute('type') == 'text' && inp.className.match(/vDateField/)) {
+            else if (inp.getAttribute('type') == 'text' && inp.className.match(/admin-date-widget/)) {
                 DateTimeShortcuts.addCalendar(inp);
             }
         }

@@ -22,7 +22,7 @@
         <a href="#" class="open_paged_selector">Add {{ class_name }}</a>
 
         <ul class="paged_selector" style='display:none'>
-  {% for item in paged_selector(class) %}
+  {% for item in paged_selector(handler, class) %}
         <li>{{ item }}</li>
   {% endfor %}
         </ul>

@@ -9,10 +9,7 @@ from django import forms
 from django.forms.util import ValidationError
 from django.utils.translation import gettext as _
 
-from . import admin_settings
-from . import admin_widgets
-from . import db_extensions
-from . import utils
+from . import admin_settings, admin_widgets, db_extensions, utils
 
 MAX_BLOB_SIZE = admin_settings.MAX_BLOB_SIZE
 BLOB_FIELD_META_SUFFIX = admin_settings.BLOB_FIELD_META_SUFFIX
@@ -24,19 +21,15 @@ class AdminModelForm(djangoforms.ModelForm):
     """
     enctype = ''
 
-    def __init__(self, urlPrefix='', *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super(AdminModelForm, self).__init__(*args, **kwargs)
-        self.urlPrefix = urlPrefix
         instance = kwargs.get('instance', None)
 
         for fieldName, field in self.fields.items():
-            # expose urlPrefix to Select widget
-            if isinstance(field.widget, admin_widgets.ReferenceSelect):
-                field.widget.urlPrefix = self.urlPrefix
             # deliver meta info to FileInput widget for file download link display
             # do it only if file is uploaded :)
             if instance and isinstance(field.widget, admin_widgets.FileInput) and getattr(instance, fieldName):
-                meta = utils.getBlobProperties(instance, fieldName)
+                meta = utils.get_blob_properties(instance, fieldName)
                 if meta:
                     fileName = meta['File_Name']
                 else:
@@ -47,12 +40,30 @@ class AdminModelForm(djangoforms.ModelForm):
                 field.widget = widget
                 self.fields[fieldName] = field
                 # set uploaded file meta data
-                widget.showDownloadLink = True
-                widget.urlPrefix = self.urlPrefix
-                widget.modelName = instance.kind()
+                widget.show_download_url = True
+                widget.model_name = instance.kind()
                 widget.fieldName = fieldName
                 widget.itemKey = instance.key()
                 widget.fileName = fileName
+
+        self.dynamic_properties = utils.get_dynamic_properties(instance)
+
+    def clean(self, *args, **kwargs):
+      c = super(AdminModelForm, self).clean(*args, **kwargs)
+      if self.dynamic_properties:
+        for prop, prop_cls in self.dynamic_properties.items():
+          if not isinstance(prop_cls, db.TextProperty):
+            continue
+          data = self.data.getall(prop)
+          if len(data) == 1:
+            data = data[0]
+          try:
+            prop_cls.validate(data)
+          except db.BadValueError as e:
+            raise ValidationError(e.message)
+          c[prop] = data
+
+      return c
 
     def save(self, *args, **kwargs):
         """The overrided method adds uploaded file meta info for BlobProperty fields.
@@ -71,9 +82,16 @@ class AdminModelForm(djangoforms.ModelForm):
                     setattr(item, metaFieldName, pickle.dumps(metaData))
                 else:
                     logging.info(
-                      'Cache field "%(metaFieldName)s" for blob property "%(propertyName)s" not found. Add field "%(metaFieldName)s" to model "%(modelName)s" if you want to store meta info about the uploaded file',
-                      {'metaFieldName': metaFieldName, 'propertyName': fieldName, 'modelName': self.Meta.model.kind()}
+                      'Cache field "%(metaFieldName)s" for blob property "%(propertyName)s" not found. Add field "%(metaFieldName)s" to model "%(model_name)s" if you want to store meta info about the uploaded file',
+                      {'metaFieldName': metaFieldName, 'propertyName': fieldName, 'model_name': self.Meta.model.kind()}
                     )
+
+        if self.dynamic_properties:
+          for prop, prop_cls in self.dynamic_properties.items():
+            if not isinstance(prop_cls, db.TextProperty):
+              continue
+            if prop in self.cleaned_data:
+              setattr(item, prop, self.cleaned_data[prop])
         # Save the item in Datastore if not told otherwise.
         if kwargs.get('commit', True):
             item.put()
@@ -94,19 +112,12 @@ def createAdminForm(formModel, editFields, editProps, readonlyFields):
     # Adjust widgets by widget type
     logging.info("Ajusting widgets for AdminForm")
     for fieldName, field in AdminForm.base_fields.items():
-        if isinstance(field.widget, forms.widgets.Textarea):
-            logging.info("  Adjusting field: %s; widget: %s" % (fieldName, field.widget.__class__))
-            field.widget.attrs.update({'rows': '15', 'cols': '40', 'class': 'adminTextarea'})
-        if isinstance(field.widget, forms.widgets.TextInput):
-            logging.info("  Adjusting field: %s; widget: %s" % (fieldName, field.widget.__class__))
-            field.widget.attrs.update({'class': 'adminTextInput'})
         if isinstance(field, djangoforms.ModelChoiceField):
             logging.info("  Adjusting field: %s; widget: %s" % (fieldName, field.widget.__class__))
             # Use custom widget with link "Add new" near dropdown box
             field.widget = admin_widgets.ReferenceSelect(
                 attrs=field.widget.attrs,
-                urlPrefix=None,
-                referenceKind=getattr(formModel, fieldName).reference_class.kind()
+                reference_kind=getattr(formModel, fieldName).reference_class.kind()
             )
             # Choices must be set after creating the widget because in our case choices
             # is not a list but a wrapeper around query that always fetches fresh data from datastore
@@ -379,3 +390,13 @@ class DateTimeProperty(djangoforms.DateTimeProperty):
     defaults = {'widget': admin_widgets.AdminSplitDateTime}
     defaults.update(kwargs)
     return super(DateTimeProperty, self).get_form_field(**defaults)
+
+  def make_value_from_form(self, value):
+    if isinstance(value, basestring):
+      import ast
+      try:
+        value = ast.literal_eval(value)
+      except SyntaxError:
+        raise ValueError('Invalid value: %s' % value)
+      return datetime.datetime.strptime(' '.join(value), '%Y-%m-%d %H:%M:%S')
+    return datetime.datetime.strptime(' '.join(value), '%Y-%m-%d %H:%M:%S')

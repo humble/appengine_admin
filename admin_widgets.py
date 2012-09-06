@@ -2,21 +2,20 @@ from django import forms
 from google.appengine.ext import db
 from webob.multidict import UnicodeMultiDict
 
-from appengine_admin import utils
+from . import admin_settings, render
 
 
 class ReferenceSelect(forms.widgets.Select):
     """Customized Select widget that adds link "Add new" near dropdown box.
         This widget should be used for ReferenceProperty support only.
     """
-    def __init__(self, urlPrefix='', referenceKind='', *attrs, **kwattrs):
+    def __init__(self, reference_kind='', *attrs, **kwattrs):
         super(ReferenceSelect, self).__init__(*attrs, **kwattrs)
-        self.urlPrefix = urlPrefix
-        self.referenceKind = referenceKind
+        self.reference_kind = reference_kind
 
     def render(self, *attrs, **kwattrs):
         output = super(ReferenceSelect, self).render(*attrs, **kwattrs)
-        return output + u'\n<a href="%s/%s/new/" target="_blank">Add new</a>' % (self.urlPrefix, self.referenceKind)
+        return output + u'\n<a href="%s/%s/new/" target="_blank">Add new</a>' % (admin_settings.ADMIN_BASE_URL, self.reference_kind)
 
 
 class FileInput(forms.widgets.Input):
@@ -24,16 +23,15 @@ class FileInput(forms.widgets.Input):
     """
     input_type = 'file'
     needs_multipart_form = True
-    download_url_template = '<a href="%(urlPrefix)s/%(modelName)s/get_blob_contents/%(fieldName)s/%(itemKey)s/">File uploaded: %(fileName)s</a>&nbsp;'
+    download_url_template = '<a href="%(base_url)s/%(model_name)s/get_blob_contents/%(field_name)s/%(itemKey)s/">File uploaded: %(fileName)s</a>&nbsp;'
 
     def __init__(self, *args, **kwargs):
         super(FileInput, self).__init__(*args, **kwargs)
-        self.urlPrefix = ''
-        self.modelName = ''
-        self.fieldName = ''
+        self.model_name = ''
+        self.field_name = ''
         self.itemKey = ''
         self.fileName = ''
-        self.showDownloadLink = False
+        self.show_download_url = False
         self.__args = args
         self.__kwargs = kwargs
 
@@ -46,11 +44,11 @@ class FileInput(forms.widgets.Input):
         """
         output = super(FileInput, self).render(name, None, attrs=attrs)
         # attach file download link
-        if self.showDownloadLink:
+        if self.show_download_url:
             output = self.download_url_template % {
-                'urlPrefix': self.urlPrefix,
-                'modelName': self.modelName,
-                'fieldName': self.fieldName,
+                'base_url': admin_settings.ADMIN_BASE_URL,
+                'model_name': self.model_name,
+                'field_name': self.field_name,
                 'itemKey': self.itemKey,
                 'fileName': self.fileName,
             } + output
@@ -69,12 +67,12 @@ class FileInput(forms.widgets.Input):
 ### These are taken from Django 1.0 contrib.admin.widgets
 class AdminDateWidget(forms.TextInput):
     def __init__(self, attrs={}):
-        super(AdminDateWidget, self).__init__(attrs={'class': 'vDateField', 'size': '10'})
+        super(AdminDateWidget, self).__init__(attrs={'class': 'admin-date-widget', 'size': '10'})
 
 
 class AdminTimeWidget(forms.TextInput):
     def __init__(self, attrs={}):
-        super(AdminTimeWidget, self).__init__(attrs={'class': 'vTimeField', 'size': '8'})
+        super(AdminTimeWidget, self).__init__(attrs={'class': 'admin-time-widget', 'size': '8'})
 
 
 class AdminSplitDateTime(forms.SplitDateTimeWidget):
@@ -122,7 +120,7 @@ class AjaxListProperty(forms.Widget):
     final_attrs = self.build_attrs(attrs, name=name)
     flat_attrs = flatatt(final_attrs)
 
-    return utils.render_template('widgets/ajax_list_property.html', {
+    return render.template('widgets/ajax_list_property.html', {
       'flat_attrs': flat_attrs,
       'objects': objects,
       'object_classes': object_classes,
@@ -161,8 +159,9 @@ def get_model_instance_url(model_instance):
   return '/admin/models/%s/edit/%s/' % (model_instance.__class__.__name__, model_instance.key())
 
 
-def paged_selector(cls):
-  from appengine_admin import admin_settings
-  from appengine_admin.utils import import_path
+def paged_selector(handler, cls):
+  from . import admin_settings
+  from .utils import import_path
   Paginator = import_path(admin_settings.PAGINATOR_PATH)
-  return Paginator(cls).get_page({}, base_url='/admin/models/Product')
+  base_url = handler.uri_for('appengine_admin.list', model_name=cls.__name__)
+  return Paginator(cls).get_page({}, base_url=base_url)

@@ -1,10 +1,15 @@
-"""Settings for appengine_admin
-"""
+'''Settings for appengine_admin.'''
 import os.path
+
+# Private variable. Use appengine_admin.get_application_routes()
+_application_routes = tuple()
 
 # Path to admin template directory
 # Overwrite this variable if you want to use custom templates for admin site
 ADMIN_TEMPLATE_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'templates')
+
+# Root URL for the admin, no trailing slash necessary.
+ADMIN_BASE_URL = '/admin/models'
 
 # Items per page in admin list view
 ADMIN_ITEMS_PER_PAGE = 50

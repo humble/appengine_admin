@@ -1,70 +1,108 @@
-﻿{% extends "admin_base.html" %}
+﻿{% extends 'admin_base.html' %}
 
 {% block content %}
-<h2>Admin :: {{ moduleTitle }}</h2>
+  <h2>
+    <a href='{{ uri_for('index') }}'>Admin</a> ::
+    <a href='{{ uri_for('list', model_name=model_name) }}'>{{ model_name }}</a> ::
 {% if item %}
-<p class="createNew"><a href="{{ urlPrefix }}/{{ moduleTitle }}/new/">Create new</a>
-    {% if item.get_absolute_url %}
-         | <a href="{{ item.get_absolute_url }}">Preview in page &raquo;</a>
-    {% endif %}
-</p>
+    <a href='{{ uri_for('edit', model_name=model_name, key=item.key()) }}'>{{ item }}</a>
+{% else %}
+    New {{ model_name }}
+{% endif %}
+  </h2>
+{% if item %}
+  <p class='create-new'><a href='{{ uri_for('new', model_name=model_name) }}'>Create new</a></p>
+  {% if item.get_absolute_url %}
+    <p><a href='{{ item.get_absolute_url() }}'>View &raquo;</a></p>
+  {% endif %}
+  ----------
 {% endif %}
 <!-- Editable properties -->
-<form id='edit-form' name="adminEditForm" method="post"
-    action="{{ urlPrefix }}/{{ moduleTitle }}/{% if item %}edit/{{ item.key }}{% else %}new{% endif %}/"
-    {% if editForm.enctype %}enctype="{{ editForm.enctype }}"{% endif %}>
-<table class="editForm">
+<form id='edit-form' method='post'
+      action='{% if item %}{{ uri_for('edit', model_name=model_name, key=item.key()) }}{% else %}{{ uri_for('new', model_name=model_name) }}{% endif %}'
+    {% if item_form.enctype %}enctype='{{ item_form.enctype }}'{% endif %}>
+{% if item_form.errors %}
+  <h3>Errors</h3>
+  {{ item_form.errors|safe }}
+{% endif %}
+  <table class='admin-form'>
     <tr>
-        <td colspan="2"><h3>Editable properties</h3></td>
+        <td colspan='2'><h3>Editable properties</h3></td>
     </tr>
-    ----------
-    {% autoescape off %}
-        {{ editForm }}
-    {% endautoescape %}
-
+{% for field in item_form %}
     <tr>
-        <td>&nbsp;</td>
-        <td>
-            <div style="float:left; clear:left;" class="okButton">
-                <input type="submit" value="OK"/>
-            </div>
-            {% if item %}
-            <div style="float:right; clear:right;" class="deleteButton">
-                <a href="{{ urlPrefix }}/{{ moduleTitle }}/delete/{{ item.key }}/" onclick='return confirm("Are you sure?");'>Delete</a>
-            </div>
-            {% endif %}
-        </td>
+      <td>{{ field.label_tag()|safe }}:</td>
+      <td>
+        {% if field.errors %}
+          {{ field.errors|safe }}
+        {% endif %}
+        {{ field|safe }}
+      </td>
     </tr>
-    {% if item %}
+{% endfor %}
+{% if item %}
+    <!-- Dynamic properties -->
+    <tr>
+      <td colspan='2'><h3>Dynamic properties (specific to this instance)</h3></td>
+    </tr>
+{% for prop, field in item_form.dynamic_properties.items() %}
+    <tr>
+      <td>{{ field.verbose_name }}:</td>
+      <td>
+  {% if field.typeName == 'BlobProperty' %}
+    {% if field.value %}
+        <a href='{{ uri_for('blob', model_name=model_name, field_name=field.name, key=item.key()) }}'>File uploaded: {{ field.meta.File_Name }}</a>
+    {% else %}
+        None
+    {% endif %}
+  {% else %}
+    {{ field.form_field|safe }}
+  {% endif %}
+      </td>
+    </tr>
+{% endfor %}
+{% endif %}{# item #}
+    <tr>
+      <td>&nbsp;</td>
+      <td>
+        <div style='float:left; clear:left;' class='okButton'>
+          <input type='submit' value='OK'/>
+        </div>
+{% if item %}
+        <div style='float:right; clear:right;' class='deleteButton'>
+          <a href='{{ uri_for('delete', model_name=model_name, key=item.key()) }}' onclick='return confirm('Are you sure?');'>Delete</a>
+        </div>
+{% endif %}
+      </td>
+    </tr>
     <!-- Readonly properties -->
     <tr>
-        <td colspan="2"><h3>Read-only properties</h3></td>
+        <td colspan='2'><h3>Read-only properties</h3></td>
     </tr>
-    {% for field in readonlyProperties %}
-        <tr>
-            <td>{{ field.verbose_name }}:</td>
-            <td>
-            {% ifequal field.typeName "BlobProperty" %}
-                {% if field.value %}
-                <a href="{{urlPrefix}}/{{moduleTitle}}/get_blob_contents/{{field.name}}/{{ item.key }}/">File uploaded: {{field.meta.File_Name}}</a>
-                {% else %}
-                None
-                {% endif %}
-            {% else %}
-            {{ field.value }}
-            {% endifequal %}
-            </td>
-        </tr>
-    {% endfor %}
+{% for field in readonly_properties %}
+    <tr>
+      <td>{{ field.verbose_name }}:</td>
+      <td>
+  {% if field.typeName == 'BlobProperty' %}
+    {% if field.value %}
+          <a href='{{ self.uri_for('blob', model_name=model_name, field_name=field.name, key=item.key()) }}'>File uploaded: {{ field.meta.File_Name }}</a>
+    {% else %}
+          None
     {% endif %}
+  {% else %}
+          {{ field.value }}
+  {% endif %}
+      </td>
+    </tr>
+{% endfor %}
 </table>
 </form>
 {% endblock %}
 
 {% block footer %}
   <script type='text/javascript'>
-    $editForm = $('#edit-form');
-    $editForm.delegate('.ajax_select_del', 'click', function(e) {
+    $item_form = $('#edit-form');
+    $item_form.delegate('.ajax_select_del', 'click', function(e) {
       e.preventDefault();
       var $instance = $(this).closest('li');
       if ($instance.hasClass('ajax_deleted')) {
@@ -78,14 +116,14 @@
       }
     });
 
-    $editForm.find('.ajax_add_key_input').keydown(function(e) {
+    $item_form.find('.ajax_add_key_input').keydown(function(e) {
       if (e.keyCode === 13) {
         $(this).closest('.ajax_add_value').find('.ajax_add_submit_input').click();
         e.preventDefault();
         e.stopPropagation();
       }
     });
-    $editForm.find('.ajax_add_submit_input').click(function(e) {
+    $item_form.find('.ajax_add_submit_input').click(function(e) {
       e.preventDefault();
       var $self = $(this),
           $ajaxSelect = $self.closest('.ajax_select'),

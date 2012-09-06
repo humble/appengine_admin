@@ -1,46 +1,42 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Transitional//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd'>
+<html xmlns='http://www.w3.org/1999/xhtml'>
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
   <title>AppEngine Admin</title>
-  <link rel="stylesheet" type='text/css' media="screen" href='/appengine_admin_media/style.css'/>
-  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
-  <script type="text/javascript" src="/appengine_admin_media/js/core.js"></script>
-  <script type="text/javascript" src="/appengine_admin_media/js/calendar.js"></script>
-  <script type="text/javascript" src="/appengine_admin_media/js/DateTimeShortcuts.js"></script>
+  <link rel='stylesheet' type='text/css' media='screen' href='/appengine_admin_media/style.css'/>
 </head>
 <body>
-  <div id="wrapper">
-
-    <div id="header">
-      <h1><a href="{{ urlPrefix }}/">AppEngine Admin</a></h1>
+  <div id='wrapper'>
+    <div id='header'>
+      <h1><a href='{{ uri_for('index') }}'>AppEngine Admin</a></h1>
     </div>
 
-{% if not errorpage %}
-    <div id="sidebar">
-
+    <div id='sidebar'>
       <p>Models</p>
       <ul>
-  {% for model_name in models %}
-        <li><a href="{{ urlPrefix }}/{{ model_name }}/list/">{{ model_name }}</a></li>
-  {% endfor %}
+{% for model_name in models %}
+        <li><a href='{{ uri_for('list', model_name=model_name) }}'>{{ model_name }}</a></li>
+{% endfor %}
       </ul>
     </div>
-{% endif %}
 
-    <div id="body">
+    <div id='body'>
       {% block content %}{% endblock %}
     </div>
 
-    <div id="footer">
-      <div id="copyright">
+    <div id='footer'>
+      <div id='copyright'>
         <a href='https://github.com/pcraciunoiu/appengine-admin'>Fork of AppEngine Admin</a><br/>
-        Design by <a href="http://www.ginger-ninja.net/">Ginger Ninja</a>
+        Design by <a href='http://www.ginger-ninja.net/'>Ginger Ninja</a>
       </div>
     </div>
 
   </div><!-- wrapper -->
 
+<script src='//ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js'></script>
+<script type='text/javascript' src='/appengine_admin_media/js/core.js'></script>
+<script type='text/javascript' src='/appengine_admin_media/js/calendar.js'></script>
+<script type='text/javascript' src='/appengine_admin_media/js/DateTimeShortcuts.js'></script>
 {% block footer %}
 {% endblock %}
 </body>
