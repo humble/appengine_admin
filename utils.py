@@ -47,6 +47,8 @@ def get_human_name(prop):
 
 
 def get_dynamic_properties(item):
+  if not item:
+    return {}
   dynamic_properties = {}
   for prop in item.dynamic_properties():
     value = getattr(item, prop)

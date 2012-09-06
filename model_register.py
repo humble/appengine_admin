@@ -60,17 +60,17 @@ class ModelAdmin(object):
         # Cache model name as string
         self.model_name = str(self.model.kind())
         self._list_properties = []
-        self._editProperties = []
+        self._edit_properties = []
         self._readonly_properties = []
         # extract properties from model by propery names
         self._extractProperties(self.list_fields, self._list_properties)
-        self._extractProperties(self.edit_fields, self._editProperties)
+        self._extractProperties(self.edit_fields, self._edit_properties)
         self._extractProperties(self.readonly_fields, self._readonly_properties)
         if self.AdminForm is None:
             self.AdminForm = admin_forms.createAdminForm(
                 form_model=self.model,
                 edit_fields=self.edit_fields,
-                edit_props=self._editProperties,
+                edit_props=self._edit_properties,
                 readonly_fields=self.readonly_fields
             )
 
@@ -82,8 +82,8 @@ class ModelAdmin(object):
         """Attaches property instances for list fields to given data entry.
             This is used in Admin class view methods.
         """
-        item.list_properties = copy.deepcopy(self._list_properties[:])
-        for prop in item.list_properties:
+        item._list_properties_copy = copy.deepcopy(self._list_properties[:])
+        for prop in item._list_properties_copy:
             try:
                 prop.value = prop.getter(item)
                 if prop.typeName == 'BlobProperty':
