@@ -1,34 +1,52 @@
-<div class="ajax_select"{{ flat_attrs }} data-name="{{ name }}">
-  <ul class="ajax_select_values">
+{% macro select_item(name, get_item_edit_url, obj, key, is_added=False) -%}
+  <li>
+    <input type=hidden{% if not is_added %} disabled=disabled{% endif %} name='{{ name }}' value='{{ key }}'/>
+    <span>{{ obj.__class__.__name__ if obj else '%class_name%' }}: <a href='{{ get_item_edit_url(obj) if obj else '#' }}'>{{ obj }}</a></span>
+    &mdash;
+    {% if is_added %}
+      <a href='#' class='ajax_select_del'>x</a>
+    {% else %}
+      <a href='#' class='paged_selector_add'>add</a>
+    {% endif %}
+  </li>
+{%- endmacro %}
+
+
+<div class='ajax_select'{{ flat_attrs }} data-name='{{ name }}'>
+  <ul class='ajax_select_values'>
 {% for key, obj in objects %}
-    <li>
-      <input type=hidden name="{{ name }}" value="{{ key }}"/>
-      <span>{{ obj.class_name }}: <a href="{{ obj.url }}">{{ obj }}</a></span>
-      <a href="#" class="ajax_select_del">x</a>
-    </li>
+  {{ select_item(name, get_item_edit_url, obj, key, is_added=True) }}
 {% endfor %}
   </ul>
 
-  <div class="ajax_add_value">
-    <input type=text name="{{ name }}" value="" class="ajax_add_key_input"/>
-    <input type=submit name=add value="Add" class="ajax_add_submit_input"/>
-    <div class="ajax_add_hint">Paste the string representation of a key above</div>
-{% if False %}{# TODO: implement AJAX paginator here #}
-    <div>OR use the paged selector(s) below.</div>
+  <div class='ajax_add_value'>
+{% for cls_name, cls in object_classes.items() %}
+  {% if loop.first %}
+    <ul class='ajax_paged_selectors'>
+  {% endif %}
+      <li class='ajax_paged_selector'>
+        <a href='#' class='open_paged_selector'>Browse {{ cls_name }}s</a>
 
-{% for class_name, class in object_classes.items() %}
-    <ul class="ajax_paged_selectors">
-      <li class="ajax_paged_selector">
-        <a href="#" class="open_paged_selector">Add {{ class_name }}</a>
-
-        <ul class="paged_selector" style='display:none'>
-  {% for item in paged_selector(handler, class) %}
-        <li>{{ item }}</li>
+        <ul class='paged_selector' style='display:none'>
+  {% set page = paged_selector(cls) %}
+  {% for obj in page %}
+    {# TODO skip existing objects #}
+    {{ select_item(name, get_item_edit_url, obj, obj.key(), is_added=False) }}
   {% endfor %}
+  {% if page.has_next() %}
+          <li><a href='{{ page.get_next_url() }}&ajax_mini_page=1' class='paged_selector_next'>Show more</a></li>
+  {% endif %}
         </ul>
       </li>
+  {% if loop.last %}
     </ul>
+  {% endif %}
 {% endfor %}
-{% endif %}
+    <div class='ajax_add_hint'>OR enter the string representation of a key:</div>
+    <input type=text name='{{ name }}' value='' class='ajax_add_key_input'/>
+    <input type=submit name=add value='Add' class='ajax_add_submit_input'/>
   </div>
-</div>
+  <script type='text/template' class='ajax_select_item_template'>
+    {{ select_item(name, None, '', '', is_added=False) }}
+  </script>
+</div>{# .ajax_select #}

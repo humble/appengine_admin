@@ -1,6 +1,6 @@
 from webapp2_extras.routes import RedirectRoute
 
-from .handlers import Admin
+from .handlers import AdminHandler
 from .model_register import register, ModelAdmin
 
 
@@ -10,12 +10,12 @@ def get_application_routes():
     return admin_settings._application_routes
 
   application_routes = (
-    ('appengine_admin.index', 'GET', r'/', Admin, 'index'),
-    ('appengine_admin.list', 'GET', r'/<model_name>/list/', Admin, 'list'),
-    ('appengine_admin.new', None, r'/<model_name>/new/', Admin, 'new'),
-    ('appengine_admin.edit', None, r'/<model_name>/edit/<key>/', Admin, 'edit'),
-    ('appengine_admin.delete', 'POST', r'/<model_name>/delete/<key>/', Admin, 'delete'),
-    ('appengine_admin.blob', 'GET', r'/<model_name>/blob/<field_name>/<key>/', Admin, 'blob'),
+    ('appengine_admin.index', 'GET', r'/', AdminHandler, 'index'),
+    ('appengine_admin.list', 'GET', r'/<model_name>/list/', AdminHandler, 'list'),
+    ('appengine_admin.new', None, r'/<model_name>/new/', AdminHandler, 'new'),
+    ('appengine_admin.edit', None, r'/<model_name>/edit/<key>/', AdminHandler, 'edit'),
+    ('appengine_admin.delete', 'POST', r'/<model_name>/delete/<key>/', AdminHandler, 'delete'),
+    ('appengine_admin.blob', 'GET', r'/<model_name>/blob/<field_name>/<key>/', AdminHandler, 'blob'),
   )
 
   admin_settings._application_routes = []

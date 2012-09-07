@@ -1,3 +1,4 @@
+import json
 import webapp2
 
 from . import authorized, model_register, render, utils
@@ -22,8 +23,12 @@ class BaseRequestHandler(webapp2.RequestHandler):
   def redirect_admin(self, route_name, *args, **kwargs):
     self.redirect(self.uri_for('appengine_admin.%s' % route_name, *args, **kwargs))
 
+  def json_response(self, data):
+    '''Encode and add JSON data to the response.'''
+    self.response.out.write(json.dumps(data))
 
-class Admin(BaseRequestHandler):
+
+class AdminHandler(BaseRequestHandler):
   '''Use this class as the central view in your app routing.
 
   Example:
@@ -33,14 +38,14 @@ class Admin(BaseRequestHandler):
   application = webapp2.WSGIApplication([
     ...
     # Admin pages
-    (r'^(/admin/models)(.*)$', appengine_admin.Admin),
+    (r'^(/admin/models)(.*)$', appengine_admin.AdminHandler),
     ...
   ], debug = settings.DEBUG)
   ===
   '''
 
   def __init__(self, *args, **kwargs):
-    super(Admin, self).__init__(*args, **kwargs)
+    super(AdminHandler, self).__init__(*args, **kwargs)
     self.models = model_register._model_register.keys()
     self.models.sort()
 
@@ -59,6 +64,22 @@ class Admin(BaseRequestHandler):
     # Get only those items that should be displayed in current page
     page = paginator.get_page(request=self.request)
     items = list(page)
+    if self.request.get('ajax_mini_page'):
+      json_items = [{
+        'key': str(item.key()),
+        'name': unicode(item),
+        'model_name': model_name,
+        'edit_url': self.uri_for('appengine_admin.edit', model_name=model_name, key=item.key())
+      } for item in items]
+      if page.has_next():
+        next_url = page.get_next_url()
+      else:
+        next_url = ''
+      json_items.append({
+        'next_url': next_url,
+      })
+      self.json_response(json_items)
+      return
     self.render('model_item_list.html', {
       'model_name': model_admin.model_name,
       'list_properties': model_admin._list_properties,

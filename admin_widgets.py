@@ -1,4 +1,7 @@
+from functools import partial
+
 from django import forms
+from django.forms.util import flatatt
 from google.appengine.ext import db
 from webob.multidict import UnicodeMultiDict
 
@@ -111,21 +114,22 @@ class AjaxListProperty(forms.Widget):
       if isinstance(key, basestring):
         key = db.Key(key)
       obj = db.get(key)
-      obj.url = get_model_instance_url(obj)
-      obj.class_name = obj.__class__.__name__
       objects.append((key, obj))
-      object_classes[obj.class_name] = obj.__class__
+      object_classes[obj.__class__.__name__] = obj.__class__
 
-    from django.forms.util import flatatt
     final_attrs = self.build_attrs(attrs, name=name)
     flat_attrs = flatatt(final_attrs)
+
+    from .handlers import AdminHandler
+    handler = AdminHandler()
 
     return render.template('widgets/ajax_list_property.html', {
       'flat_attrs': flat_attrs,
       'objects': objects,
       'object_classes': object_classes,
+      'get_item_edit_url': partial(get_item_edit_url, handler=handler),
       'name': name,
-      'paged_selector': paged_selector,
+      'paged_selector': partial(paged_selector, handler=handler),
     })
 
   def value_from_datadict(self, data, files, name):
@@ -155,13 +159,13 @@ class AjaxListProperty(forms.Widget):
     return data_set != initial_set
 
 
-def get_model_instance_url(model_instance):
-  return '/admin/models/%s/edit/%s/' % (model_instance.__class__.__name__, model_instance.key())
+def get_item_edit_url(model_instance, handler):
+  return handler.uri_for('appengine_admin.edit', model_name=model_instance.__class__.__name__, key=model_instance.key())
 
 
-def paged_selector(handler, cls):
-  from . import admin_settings
-  from .utils import import_path
-  Paginator = import_path(admin_settings.PAGINATOR_PATH)
+def paged_selector(cls, handler):
+  from . import model_register
+  from .utils import Paginator
+  model_admin = model_register.get_model_admin(cls.__name__)
   base_url = handler.uri_for('appengine_admin.list', model_name=cls.__name__)
-  return Paginator(cls).get_page({}, base_url=base_url)
+  return Paginator(model_admin).get_page({}, base_url=base_url)

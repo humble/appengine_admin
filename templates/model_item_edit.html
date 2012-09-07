@@ -104,16 +104,18 @@
     $item_form = $('#edit-form');
     $item_form.delegate('.ajax_select_del', 'click', function(e) {
       e.preventDefault();
+      e.stopPropagation();
       var $instance = $(this).closest('li');
-      if ($instance.hasClass('ajax_deleted')) {
-        $instance.removeClass('ajax_deleted');
-        $(this).html('x');
-        $instance.find('input').removeAttr('disabled');
-      } else {
-        $instance.addClass('ajax_deleted');
-        $(this).html('(undo delete)');
-        $instance.find('input').attr('disabled', 'disabled');
+      var $pagedSelector = $instance.closest('.ajax_select').find('.paged_selector');
+      if (!$pagedSelector.is(':visible')) {
+        $pagedSelector.show();
       }
+      $instance.find('input')
+          .attr('disabled', 'disabled').end()
+        .find('.ajax_select_del')
+          .removeClass('ajax_select_del').addClass('paged_selector_add')
+          .html('add').end();
+      $instance.prependTo($pagedSelector);
     });
 
     $item_form.find('.ajax_add_key_input').keydown(function(e) {
@@ -137,5 +139,57 @@
       $ajaxSelect.find('.ajax_select_values').append($item);
       $input.val('');
     });
+
+
+    {# paged selector code #}
+    $('.open_paged_selector').click(function(e) {
+      e.preventDefault();
+      $(this).closest('.ajax_paged_selector').find('.paged_selector').slideToggle();
+    });
+
+    $('.paged_selector').delegate('.paged_selector_add', 'click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var $item = $(this).closest('li');
+      $item.find('.paged_selector_add')
+          .removeClass('paged_selector_add').addClass('ajax_select_del')
+          .html('x').end()
+        .find('input').removeAttr('disabled');
+      $item.appendTo($item.closest('.ajax_select').find('.ajax_select_values'));
+    });
+
+    {# TODO: skip existing objects #}
+    $('.paged_selector_next').click(function(e) {
+      e.preventDefault();
+      var $self = $(this),
+          $thisItem = $self.closest('li');
+          TEMPLATE = $thisItem.closest('.ajax_select').find('.ajax_select_item_template').html();
+      $.ajax({
+        url: $self.attr('href'),
+        dataType: 'json',
+        type: 'GET',
+        success: function(data) {
+          var item, $selectItem;
+          for (var i in data) {
+            item = data[i];
+            if (item.hasOwnProperty('next_url')) {
+              if (item.next_url) {
+                $self.attr('href', item.next_url + '&ajax_mini_page=1');
+              } else {
+                $thisItem.hide();
+              }
+              continue;
+            }
+            $selectItem = $(TEMPLATE.replace('%class_name%', item.model_name))
+              .find('input')
+                .val(item.key).end()
+              .find('span > a')
+                .html(item.name).attr('href', item.edit_url).end()
+              .insertBefore($thisItem);
+          }
+        }
+      });
+    });
+    {# END paged selector code #}
   </script>
 {% endblock %}
