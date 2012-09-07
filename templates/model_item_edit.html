@@ -28,8 +28,14 @@
         action='{% if item %}{{ uri_for('edit', model_name=model_name, key=item.key()) }}{% else %}{{ uri_for('new', model_name=model_name) }}{% endif %}'
     {% if item_form.enctype %}enctype='{{ item_form.enctype }}'{% endif %}>
 {% if item_form.errors %}
-  <h3>Errors</h3>
-  {{ item_form.errors|safe }}
+  <h3 class='text-error'>Errors</h3>
+  <ul class='errorlist'>
+  {% for field_name, error_messages in item_form.errors.items() %}
+    {% for error_message in error_messages %}
+      <li class='text-error'><a class='text-error' href='#row_{{ field_name }}'>{{ field_name }}: {{ error_message }}</a></li>
+    {% endfor %}
+  {% endfor %}
+  </ul>
 {% endif %}
   <table class='table table-striped table-bordered table-hover'>
     <thead>
@@ -40,13 +46,17 @@
     <tbody>
     {{ action_buttons(model_name, item) }}
 {% for field in item_form %}
-    <tr>
+    <tr id='row_{{ field.name }}' class='control-group{% if field.errors %} error{% endif %}'>
       <td class='table-row-heading'>{{ field.label_tag()|safe }}</td>
       <td class='table-row-value'>
+        <div class='controls'>
+          {{ field|safe }}
         {% if field.errors %}
-          {{ field.errors|safe }}
+          {% for error in field.errors %}
+          <span class='help-inline'>{{ error|safe }}</span>
+          {% endfor %}
         {% endif %}
-        {{ field|safe }}
+        </div>
       </td>
     </tr>
 {% endfor %}
@@ -100,6 +110,11 @@
 
 {% block javascript %}
   <script type='text/javascript'>
+    $('.admin-datetime').datetimepicker({
+      dateFormat: 'yy-mm-dd',
+      timeFormat: 'hh:mm:ss'
+    });
+
     $item_form = $('#edit-form');
 
     $item_form.find('.delete-item').click(function(e) {
@@ -141,8 +156,8 @@
         return;
       }
       var $item = '<li><input type=hidden name="' + $ajaxSelect.data('name') + '" value="' + $input.val()  + '"/>' +
-                  '<span>Key: ' + $input.val() + '</span> ' +
-                  '<a href="#" class="icon-remove-sign ajax_select_del"> </a></li>';
+                  '<a href="#" class="icon-remove-sign ajax_select_del"> </a> &mdash; ' +
+                  '<span>Key: ' + $input.val() + '</span></li>';
       $ajaxSelect.find('.ajax_select_values').append($item);
       $input.val('');
     });

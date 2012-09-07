@@ -31,7 +31,7 @@
 {% endfor %}
     <div class='ajax_add_hint'>OR enter the string representation of a key:</div>
     <input type=text name='{{ name }}' value='' class='ajax_add_key_input'/>
-    <input type=submit name=add value='Add' class='ajax_add_submit_input'/>
+    <input type=submit name=add value='Add' class='btn btn-small btn-info ajax_add_submit_input'/>
   </div>
   <script type='text/template' class='ajax_select_item_template'>
     {{ select_item(name, None, '', '', is_added=False) }}

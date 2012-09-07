@@ -134,21 +134,6 @@ def createAdminForm(form_model, edit_fields, edit_props, readonly_fields, pre_sa
         if getattr(field.widget, 'needs_multipart_form', False):
             AdminForm.enctype = 'multipart/form-data'
 
-    # Adjust widgets by property type
-    for prop in edit_props:
-        if prop.typeName == 'DateProperty':
-            AdminForm.base_fields[prop.name].widget = admin_widgets.AdminDateWidget()
-        if prop.typeName == 'TimeProperty':
-            AdminForm.base_fields[prop.name].widget = admin_widgets.AdminTimeWidget()
-        if prop.typeName == 'DateTimeProperty':
-            old = AdminForm.base_fields[prop.name]
-            AdminForm.base_fields[prop.name] = SplitDateTimeField(
-                required=old.required,
-                widget=admin_widgets.AdminSplitDateTime,
-                label=old.label,
-                initial=old.initial,
-                help_text=old.help_text,
-            )
     return AdminForm
 
 
@@ -396,22 +381,10 @@ class DateTimeProperty(djangoforms.DateTimeProperty):
     auto_now_add is set, in which case None is returned, as such
     'auto' fields should not be rendered as part of the form.
     '''
-    defaults = {'widget': admin_widgets.AdminSplitDateTime}
+    defaults = {'widget': forms.DateTimeInput(attrs={'class': 'admin-datetime'})}
     defaults.update(kwargs)
     return super(DateTimeProperty, self).get_form_field(**defaults)
 
   def make_value_from_form(self, value):
-    '''Override djangoforms' default value handling for DateTimeProperty.
-
-    TODO: Fix the double representation.
-    It appears that the received value can either be a list ['date string', 'time string'], or its string representation "['date string', 'time string']"
-
-    '''
-    if isinstance(value, basestring):
-      import ast
-      try:
-        value = ast.literal_eval(value)
-      except SyntaxError:
-        raise ValueError('Invalid value: %s' % value)
-      return datetime.datetime.strptime(' '.join(value), '%Y-%m-%d %H:%M:%S')
-    return datetime.datetime.strptime(' '.join(value), '%Y-%m-%d %H:%M:%S')
+    '''Override djangoforms' default value handling for DateTimeProperty.'''
+    return datetime.datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
