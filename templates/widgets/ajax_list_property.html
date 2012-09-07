@@ -1,17 +1,4 @@
-{% macro select_item(name, get_item_edit_url, obj, key, is_added=False) -%}
-  <li>
-    <input type=hidden{% if not is_added %} disabled=disabled{% endif %} name='{{ name }}' value='{{ key }}'/>
-    <span>{{ obj.__class__.__name__ if obj else '%class_name%' }}: <a href='{{ get_item_edit_url(obj) if obj else '#' }}'>{{ obj }}</a></span>
-    &mdash;
-    {% if is_added %}
-      <a href='#' class='ajax_select_del'>x</a>
-    {% else %}
-      <a href='#' class='paged_selector_add'>add</a>
-    {% endif %}
-  </li>
-{%- endmacro %}
-
-
+{% from 'macros.html' import select_item with context %}
 <div class='ajax_select'{{ flat_attrs }} data-name='{{ name }}'>
   <ul class='ajax_select_values'>
 {% for key, obj in objects %}

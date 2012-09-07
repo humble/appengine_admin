@@ -1,5 +1,6 @@
 import copy
 import logging
+import os
 import pickle
 
 from google.appengine.api import datastore_errors
@@ -88,3 +89,10 @@ def get_readonly_properties_with_values(item, model_admin):
     else:
       logging.info("%s :: %s" % (prop.name, prop.value))
   return readonly_properties
+
+
+def is_production():
+  '''Determine if we are running in a production environment.'''
+  if os.environ['SERVER_SOFTWARE'].startswith('Devel'):
+    return False
+  return True

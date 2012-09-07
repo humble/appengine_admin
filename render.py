@@ -27,4 +27,9 @@ env = jinja2.Environment(**config)
 
 
 def template(path, template_kwargs={}):
+  from . import utils
+  template_kwargs.update({
+    'DEBUG': not utils.is_production(),
+    'media_url': admin_settings.ADMIN_MEDIA_URL,
+  })
   return env.get_template(path).render(template_kwargs)

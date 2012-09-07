@@ -10,6 +10,7 @@ ADMIN_TEMPLATE_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), 't
 
 # Root URL for the admin, no trailing slash necessary.
 ADMIN_BASE_URL = '/admin/models'
+ADMIN_MEDIA_URL = '/appengine_admin_media'
 
 # Items per page in admin list view
 ADMIN_ITEMS_PER_PAGE = 50

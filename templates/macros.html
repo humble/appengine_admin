@@ -1,0 +1,38 @@
+{% macro generate_breadcrumbs(breadcrumbs) -%}
+  {% if not breadcrumbs %}
+    {% set breadcrumbs = [] %}
+  {% endif %}
+  {% set breadcrumbs = [(uri_for('index'), 'Home')] + breadcrumbs %}
+    <ul class="breadcrumb" style='background:none;margin-bottom:0'>
+  {% for crumb_url, crumb_name in breadcrumbs %}
+      <li{% if loop.last %} class='active'{% endif %}><a class='label label-link label-inverse' href="{{ crumb_url }}">{{ crumb_name }}</a <span class='divider'>&raquo;</span></li>
+  {% endfor %}
+    </ul>
+{%- endmacro %}
+
+
+{% macro select_item(name, get_item_edit_url, obj, key, is_added=False) -%}
+  <li>
+    {% if is_added %}
+      <a href='#' class='icon-remove-sign ajax_select_del'> </a>
+    {% else %}
+      <a href='#' class='icon-plus paged_selector_add'> </a>
+    {% endif %}
+    &mdash;
+    <input type=hidden{% if not is_added %} disabled=disabled{% endif %} name='{{ name }}' value='{{ key }}'/>
+    <span>{{ obj.__class__.__name__ if obj else '%class_name%' }}: <a href='{{ get_item_edit_url(obj) if obj else '#' }}'>{{ obj }}</a></span>
+  </li>
+{%- endmacro %}
+
+
+{% macro action_buttons(model_name, item) -%}
+    <tr class='action-row'>
+      <td class='table-row-heading'>Actions</td>
+      <td class='table-row-value'>
+  {% if item %}
+        <button type='button' name='delete' class='delete-item pull-right btn btn-mini btn-warning' data-action='{{ uri_for('delete', model_name=model_name, key=item.key()) }}'>Delete</button>
+  {% endif %}
+        <button type='submit' name='success' class='btn btn-success'>Save</button>
+      </td>
+    </tr>
+{%- endmacro %}

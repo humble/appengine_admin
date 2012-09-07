@@ -1,5 +1,7 @@
 import json
+
 import webapp2
+from webapp2_extras import sessions
 
 from . import authorized, model_register, render, utils
 
@@ -15,7 +17,7 @@ class BaseRequestHandler(webapp2.RequestHandler):
 
   def render(self, path, template_kwargs={}):
     template_kwargs['uri_for'] = lambda route_name, *a, **kw: self.uri_for('appengine_admin.%s' % route_name, *a, **kw)
-    template_kwargs['handler'] = self
+    template_kwargs['get_messages'] = self.get_messages
     if hasattr(self, 'models'):
       template_kwargs['models'] = self.models
     self.response.out.write(render.template(path, template_kwargs))
@@ -26,6 +28,30 @@ class BaseRequestHandler(webapp2.RequestHandler):
   def json_response(self, data):
     '''Encode and add JSON data to the response.'''
     self.response.out.write(json.dumps(data))
+
+  def dispatch(self):
+    # Get a session store for this request.
+    self.session_store = sessions.get_store(request=self.request)
+    try:
+      # Dispatch the request.
+      webapp2.RequestHandler.dispatch(self)
+    finally:
+      # Save all sessions.
+      self.session_store.save_sessions(self.response)
+
+  @webapp2.cached_property
+  def session(self):
+    '''Returns a session using the default cookie key.'''
+    return self.session_store.get_session()
+
+  def add_message(self, message):
+    self.session['messages'] = self.session.get('messages') or [] + [message]
+
+  def get_messages(self):
+    messages = self.session.get('messages') or []
+    if messages:
+      del self.session['messages']
+    return messages
 
 
 class AdminHandler(BaseRequestHandler):
@@ -96,6 +122,7 @@ class AdminHandler(BaseRequestHandler):
       if item_form.is_valid():
         # Save the data, and redirect to the edit page
         item = item_form.save()
+        self.add_message('%s %s created!' % (model_name, unicode(item)))
         self.redirect_admin('edit', model_name=model_admin.model_name, key=item.key())
         return
     else:
@@ -124,6 +151,7 @@ class AdminHandler(BaseRequestHandler):
       if item_form.is_valid():
         # Save the data, and redirect to the edit page
         item = item_form.save()
+        self.add_message('%s %s updated.' % (model_name, unicode(item)))
         self.redirect_admin('edit', model_name=model_admin.model_name, key=item.key())
         return
     else:

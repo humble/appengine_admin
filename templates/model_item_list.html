@@ -1,15 +1,22 @@
 ﻿{% extends 'admin_base.html' %}
 
+{% set breadcrumbs = [(uri_for('list', model_name=model_name), model_name)] %}
+
 {% block content %}
-  <h2><a href='{{ uri_for('index') }}'>Admin</a> :: <a href='{{ uri_for('list', model_name=model_name) }}'>{{ model_name }}</a></h2>
-  <p class='createNew'><a href='{{ uri_for('new', model_name=model_name) }}'>Create new</a></p>
-  <table class='itemList' cellspacing='0'>
+  <div class='btn-group pull-right'>
+    <a href='{{ uri_for('new', model_name=model_name) }}'><div class='btn'>New {{ model_name }}</div></a>
+  </div>
+  <h1>Browse {{ model_name }}s</h1>
+  <table class='table table-striped table-bordered table-hover'>
+    <thead>
     <tr>
 {% for property in list_properties %}
       <th>{{ property.verbose_name }}</th>
 {% endfor %}
       <th> </th>
     </tr>
+    </thead>
+    <tbody>
 {% for item in items %}
     <tr>
   {% for property in item._list_properties_copy %}
@@ -36,25 +43,24 @@
     {% endif %}
   {% endfor %}
       <td>
-        <form action='{{ uri_for('delete', model_name=model_name, key=item.key()) }}' method='POST' onsubmit='return confirm("Are you sure?");'/>
-          <input type='submit' name='delete' value='Delete'/>
+        <form class='mini-form' action='{{ uri_for('delete', model_name=model_name, key=item.key()) }}' method='POST' onsubmit='return confirm("Are you sure you want to delete this item?");'/>
+          <button type='submit' name='delete' class='btn btn-mini btn-warning'>Delete</button>
         </form>
       </td>
     </tr>
 {% endfor %}
+    </tbody>
   </table>
   <!-- paging -->
-  <p>
-{% if page.has_previous() %}
-    <a href='{{ page.get_previous_url() }}'>Previous</a>
-{% else %}
-    Previous
-{% endif %}
-{% if page.has_next() %}
-    <a href='{{ page.get_next_url() }}'>Next</a>
-{% else %}
-    Next
-{% endif %}
-  </p>
+  <div class='pagination'>
+    <ul>
+      <li{% if not page.has_previous() %} class='disabled'{% endif %}>
+        <a href='{{ page.get_previous_url() or '#' }}'>Previous page</a>
+      </li>
+      <li{% if not page.has_next() %} class='disabled'{% endif %}>
+        <a href='{{ page.get_next_url() or '#' }}'>Next page</a>
+      </li>
+    </ul>
+  </div>
   <!-- END paging -->
 {% endblock %}
