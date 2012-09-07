@@ -92,20 +92,19 @@ class AdminHandler(BaseRequestHandler):
     '''Handle creating a new record for a particular model.'''
     model_admin = model_register.get_model_admin(model_name)
     if self.request.method == 'POST':
-      item_form = model_admin.AdminForm(data=self.request.POST)
+      item_form = model_admin.AdminNewForm(data=self.request.POST)
       if item_form.is_valid():
         # Save the data, and redirect to the edit page
         item = item_form.save()
         self.redirect_admin('edit', model_name=model_admin.model_name, key=item.key())
         return
     else:
-      item_form = model_admin.AdminForm()
+      item_form = model_admin.AdminNewForm()
 
     template_kwargs = {
       'item': None,
       'model_name': model_admin.model_name,
       'item_form': item_form,
-      'readonly_properties': model_admin._readonly_properties,
     }
     self.render('model_item_edit.html', template_kwargs)
 
@@ -117,6 +116,8 @@ class AdminHandler(BaseRequestHandler):
     '''
     model_admin = model_register.get_model_admin(model_name)
     item = utils.safe_get_by_key(model_admin.model, key)
+    if not item:
+      raise utils.Http404()
 
     if self.request.method == 'POST':
       item_form = model_admin.AdminForm(data=self.request.POST, instance=item)
@@ -144,6 +145,8 @@ class AdminHandler(BaseRequestHandler):
     '''
     model_admin = model_register.get_model_admin(model_name)
     item = utils.safe_get_by_key(model_admin.model, key)
+    if not item:
+      raise utils.Http404()
     item.delete()
     self.redirect_admin('list', model_name=model_admin.model_name)
 

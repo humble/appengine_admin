@@ -54,6 +54,9 @@ class ModelAdmin(object):
     readonly_fields = ()
     listGql = ''
     AdminForm = None
+    AdminNewForm = None
+    pre_save = None
+    post_save = None
 
     def __init__(self):
         super(ModelAdmin, self).__init__()
@@ -71,7 +74,17 @@ class ModelAdmin(object):
                 form_model=self.model,
                 edit_fields=self.edit_fields,
                 edit_props=self._edit_properties,
-                readonly_fields=self.readonly_fields
+                readonly_fields=self.readonly_fields,
+                pre_save=self.pre_save,
+                post_save=self.post_save,
+            )
+            self.AdminNewForm = admin_forms.createAdminForm(
+                form_model=self.model,
+                edit_fields=[],
+                edit_props=[],
+                readonly_fields=[],
+                pre_save=self.pre_save,
+                post_save=self.post_save,
             )
 
     def _extractProperties(self, field_names, storage):
@@ -121,9 +134,9 @@ def register(*args):
         last registered instance will be the active one.
     """
     for model_admin_class in args:
-        model_adminInstance = model_admin_class()
-        _model_register[model_adminInstance.model_name] = model_adminInstance
-        logging.info("Registering AdminModel '%s' for model '%s'" % (model_admin_class.__name__, model_adminInstance.model_name))
+        model_admin_instance = model_admin_class()
+        _model_register[model_admin_instance.model_name] = model_admin_instance
+        logging.info("Registering AdminModel '%s' for model '%s'" % (model_admin_class.__name__, model_admin_instance.model_name))
 
 
 def get_model_admin(model_name):

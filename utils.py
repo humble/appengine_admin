@@ -74,10 +74,12 @@ def safe_get_by_key(model, key):
 
 
 def get_readonly_properties_with_values(item, model_admin):
+  if not item:
+    return []
   readonly_properties = copy.deepcopy(model_admin._readonly_properties)
   for i, prop in enumerate(readonly_properties):
-    itemValue = getattr(item, prop.name)
-    prop.value = itemValue
+    item_value = getattr(item, prop.name)
+    prop.value = item_value
     if prop.typeName == 'BlobProperty':
       logging.info("%s :: Binary content" % prop.name)
       prop.meta = get_blob_properties(item, prop.name)

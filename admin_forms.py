@@ -20,6 +20,8 @@ class AdminModelForm(djangoforms.ModelForm):
         to the form while processing the request.
     """
     enctype = ''
+    pre_save = None
+    post_save = None
 
     def __init__(self, *args, **kwargs):
         super(AdminModelForm, self).__init__(*args, **kwargs)
@@ -92,22 +94,29 @@ class AdminModelForm(djangoforms.ModelForm):
               continue
             if prop in self.cleaned_data:
               setattr(item, prop, self.cleaned_data[prop])
+        if self.pre_save:
+          item = self.pre_save(item)
         # Save the item in Datastore if not told otherwise.
         if kwargs.get('commit', True):
             item.put()
+        if self.post_save:
+          return self.post_save(item)
         return item
 
 
-def createAdminForm(form_model, edit_fields, edit_props, readonly_fields):
+def createAdminForm(form_model, edit_fields, edit_props, readonly_fields, pre_save, post_save):
     """AdminForm factory
         Input: form_model - model that will be used for ModelForm creation
             edit_fields - tuple of field names that should be exposed in the form
     """
     class AdminForm(AdminModelForm):
-        class Meta:
-            model = form_model
-            fields = edit_fields
-            exclude = readonly_fields
+      class Meta:
+        model = form_model
+        fields = edit_fields
+        exclude = readonly_fields
+
+    AdminForm.pre_save = pre_save
+    AdminForm.post_save = post_save
 
     # Adjust widgets by widget type
     logging.info("Ajusting widgets for AdminForm")
