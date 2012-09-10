@@ -27,3 +27,7 @@ PAGINATOR_PATH = 'gae_paginator.Paginator'
 
 # Set this to your custom access callback
 # ACCESS_CALLBACK = some_func
+
+# Set this to your custom notification callback
+# Useful e.g. when errors occur in the admin handler
+NOTIFY_CALLBACK = None

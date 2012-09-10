@@ -97,3 +97,11 @@ def is_production():
   if os.environ['SERVER_SOFTWARE'].startswith('Devel'):
     return False
   return True
+
+
+def notify_if_configured(reason, **kwargs):
+  logging.error(u'Error occured (reason %s): %s' % (reason, kwargs))
+  from . import admin_settings
+  notify_func = admin_settings.NOTIFY_CALLBACK
+  if notify_func:
+    notify_func(reason=reason, **kwargs)

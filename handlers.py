@@ -13,7 +13,10 @@ class BaseRequestHandler(webapp2.RequestHandler):
       path = '%s.html' % exception.code
       self.render(path, {'errorpage': True})
       return
-    super(BaseRequestHandler, self).handle_exception(exception, debug_mode)
+    utils.notify_if_configured(reason='handler_exception',
+                               exception=exception, debug_mode=debug_mode,
+                               session=self.session)
+    self.render('500.html', {'errorpage': True})
 
   def render(self, path, template_kwargs={}):
     template_kwargs['uri_for'] = lambda route_name, *a, **kw: self.uri_for('appengine_admin.%s' % route_name, *a, **kw)
