@@ -1,7 +1,8 @@
-import logging
-import pickle
 import copy
 import datetime
+import logging
+import pickle
+
 from google.appengine.api import datastore_errors
 from google.appengine.ext import db
 from google.appengine.ext.db import djangoforms
@@ -16,42 +17,43 @@ BLOB_FIELD_META_SUFFIX = admin_settings.BLOB_FIELD_META_SUFFIX
 
 
 class AdminModelForm(djangoforms.ModelForm):
-    """This class extends ModelForm to be able to pass additional attributes
-        to the form while processing the request.
-    """
+    '''Custom admin handler, override appengine's django.ModelForm defaults.'''
     enctype = ''
     pre_save = None
     post_save = None
 
     def __init__(self, *args, **kwargs):
-        super(AdminModelForm, self).__init__(*args, **kwargs)
-        instance = kwargs.get('instance', None)
+      super(AdminModelForm, self).__init__(*args, **kwargs)
+      instance = kwargs.get('instance', None)
 
-        for field_name, field in self.fields.items():
-            # deliver meta info to FileInput widget for file download link display
-            # do it only if file is uploaded :)
-            if instance and isinstance(field.widget, admin_widgets.FileInput) and getattr(instance, field_name):
-                meta = utils.get_blob_properties(instance, field_name)
-                if meta:
-                    fileName = meta['File_Name']
-                else:
-                    fileName = ''
-                # these settings should be indivudual for every instance
-                field = copy.copy(field)
-                widget = copy.copy(field.widget)
-                field.widget = widget
-                self.fields[field_name] = field
-                # set uploaded file meta data
-                widget.show_download_url = True
-                widget.model_name = instance.kind()
-                widget.field_name = field_name
-                widget.itemKey = instance.key()
-                widget.fileName = fileName
+      for field_name, field in self.fields.items():
+        # deliver meta info to FileInput widget for file download link display
+        # do it only if file is uploaded :)
+        if instance and isinstance(field.widget, admin_widgets.FileInput) and getattr(instance, field_name):
+          meta = utils.get_blob_properties(instance, field_name)
+          if meta:
+            file_name = meta['File_Name']
+          else:
+            file_name = ''
+          # these settings should be indivudual for every instance
+          field = copy.copy(field)
+          widget = copy.copy(field.widget)
+          field.widget = widget
+          self.fields[field_name] = field
+          # set uploaded file meta data
+          widget.show_download_url = True
+          widget.model_name = instance.kind()
+          widget.field_name = field_name
+          widget.item_key = instance.key()
+          widget.file_name = file_name
 
-        self.dynamic_properties = utils.get_dynamic_properties(instance)
+      # Special handling for dynamic properties
+      self.dynamic_properties = utils.get_dynamic_properties(instance)
 
     def clean(self, *args, **kwargs):
       c = super(AdminModelForm, self).clean(*args, **kwargs)
+
+      # Special handling for dynamic properties
       if self.dynamic_properties:
         for prop, prop_cls in self.dynamic_properties.items():
           if not isinstance(prop_cls, db.TextProperty):
@@ -68,47 +70,61 @@ class AdminModelForm(djangoforms.ModelForm):
       return c
 
     def save(self, *args, **kwargs):
-        """The overrided method adds uploaded file meta info for BlobProperty fields.
-        """
-        item = super(AdminModelForm, self).save(*args, **kwargs)
-        for field_name, field in self.fields.items():
-            if isinstance(field, FileField) and field.file_name is not None:
-                metaFieldName = field_name + BLOB_FIELD_META_SUFFIX
-                if getattr(self.Meta.model, metaFieldName, None):
-                    metaData = {
-                        'Content_Type': field.file_type,
-                        'File_Name': field.file_name,
-                        'File_Size': field.file_size,
-                    }
-                    logging.info("Caching meta data for BlobProperty: %r" % metaData)
-                    setattr(item, metaFieldName, pickle.dumps(metaData))
-                else:
-                    logging.info(
-                      'Cache field "%(metaFieldName)s" for blob property "%(field_name)s" not found. Add field "%(metaFieldName)s" to model "%(model_name)s" if you want to store meta info about the uploaded file',
-                      {'metaFieldName': metaFieldName, 'field_name': field_name, 'model_name': self.Meta.model.kind()}
-                    )
+      '''Override to add custom admin behavior.
 
-        if self.dynamic_properties:
-          for prop, prop_cls in self.dynamic_properties.items():
-            if not isinstance(prop_cls, db.TextProperty):
-              continue
-            if prop in self.cleaned_data:
-              setattr(item, prop, self.cleaned_data[prop])
-        if self.pre_save:
-          item = self.pre_save(item)
-        # Save the item in Datastore if not told otherwise.
-        if kwargs.get('commit', True):
-            item.put()
-        if self.post_save:
-          return self.post_save(item)
-        return item
+        * Uploaded file meta info for BlobProperty fields
+        * Dynamic properties saving
+
+      '''
+      commit = kwargs.pop('commit')
+      kwargs['commit'] = False
+      item = super(AdminModelForm, self).save(*args, **kwargs)
+
+      # Spcial handling for BlobProperty
+      for field_name, field in self.fields.items():
+        if isinstance(field, FileField) and field.file_name is not None:
+          meta_field_name = field_name + BLOB_FIELD_META_SUFFIX
+          if getattr(self.Meta.model, meta_field_name, None):
+            meta_data = {
+                'Content_Type': field.file_type,
+                'File_Name': field.file_name,
+                'File_Size': field.file_size,
+            }
+            logging.info("Caching meta data for BlobProperty: %r" % meta_data)
+            setattr(item, meta_field_name, pickle.dumps(meta_data))
+          else:
+            logging.info(
+              'Cache field "%(meta_field_name)s" for blob property "%(field_name)s" not found. Add field "%(meta_field_name)s" to model "%(model_name)s" if you want to store meta info about the uploaded file',
+              {'meta_field_name': meta_field_name, 'field_name': field_name, 'model_name': self.Meta.model.kind()})
+
+      # Special handling for dynamic properties
+      if self.dynamic_properties:
+        for prop, prop_cls in self.dynamic_properties.items():
+          if not isinstance(prop_cls, db.TextProperty):
+            continue
+          if prop in self.cleaned_data:
+            setattr(item, prop, self.cleaned_data[prop])
+
+      if self.pre_save:  # hook before saving
+        item = self.pre_save(item)
+      # Save the item in Datastore if not told otherwise.
+      if commit:
+          item.put()
+      if self.post_save:  # hook after saving
+        return self.post_save(item)
+      return item
 
 
-def createAdminForm(form_model, edit_fields, edit_props, readonly_fields, pre_save, post_save):
-    """AdminForm factory
-        Input: form_model - model that will be used for ModelForm creation
-            edit_fields - tuple of field names that should be exposed in the form
-    """
+def create(form_model, edit_fields, readonly_fields, pre_save, post_save):
+    '''Factory for admin forms.
+
+    Input:
+      * form_model - class to be used for ModelForm creation
+      * edit_fields - tuple of field names that should be exposed in the form
+      * readonly_fields - marked separately as read-only when editing,
+                          but still editable for new instances
+      * pre_save, post_save - hooks called before/after saving an item
+    '''
     class AdminForm(AdminModelForm):
       class Meta:
         model = form_model
@@ -119,20 +135,18 @@ def createAdminForm(form_model, edit_fields, edit_props, readonly_fields, pre_sa
     AdminForm.post_save = post_save
 
     # Adjust widgets by widget type
-    logging.info("Ajusting widgets for AdminForm")
     for field_name, field in AdminForm.base_fields.items():
-        if isinstance(field, djangoforms.ModelChoiceField):
-            logging.info("  Adjusting field: %s; widget: %s" % (field_name, field.widget.__class__))
-            # Use custom widget with link "Add new" near dropdown box
-            field.widget = admin_widgets.ReferenceSelect(
-                attrs=field.widget.attrs,
-                reference_kind=getattr(form_model, field_name).reference_class.kind()
-            )
-            # Choices must be set after creating the widget because in our case choices
-            # is not a list but a wrapeper around query that always fetches fresh data from datastore
-            field.widget.choices = field.choices
+      if isinstance(field, djangoforms.ModelChoiceField):
+        logging.info("  Adjusting field: %s; widget: %s" % (field_name, field.widget.__class__))
+        # Use custom widget with link "Add new" near dropdown box
+        field.widget = admin_widgets.ReferenceSelect(
+          attrs=field.widget.attrs,
+          reference_kind=getattr(form_model, field_name).reference_class.kind())
+        # Choices must be set after creating the widget because in our case choices
+        # is not a list but a wrapeper around query that always fetches fresh data from datastore
+        field.widget.choices = field.choices
         if getattr(field.widget, 'needs_multipart_form', False):
-            AdminForm.enctype = 'multipart/form-data'
+          AdminForm.enctype = 'multipart/form-data'
 
     return AdminForm
 
@@ -291,15 +305,6 @@ class ModelMultipleChoiceField(forms.MultipleChoiceField):
                                        self.reference_class.__name__)
             new_value.append(item)
         return new_value
-
-
-class SplitDateTimeField(forms.fields.SplitDateTimeField):
-    def compress(self, data_list):
-        """Checks additionaly if all necessary data is supplied
-        """
-        if data_list and None not in data_list:
-            return datetime.datetime.combine(*data_list)
-        return None
 
 
 class MultipleChoiceField(forms.fields.MultipleChoiceField):

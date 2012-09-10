@@ -19,7 +19,19 @@
     appengine_admin.admin_settings.PAGINATOR_PATH = 'path.to.paginator.Paginator'
     ```
 
-3. That's it! Use it like so, in your handlers (__full working example__):
+3. Update your app.yaml to add the URLs:
+
+    ```python
+    - url: /appengine_admin_media
+      static_dir: appengine_admin/media
+
+    # Your custom handler goes here (see next step)
+    - url: /admin/models.*
+      script: handlers.admin.app
+      secure: always
+    ```
+
+4. Use it like so, in your handlers (__full working example__):
 
     ```python
     import appengine_admin
@@ -47,19 +59,29 @@
     # Register the appengine admin models.
     class AdminSong(appengine_admin.ModelAdmin):
       model = Song
-      listFields = ['title', 'genre', 'album']
-      readonlyFields = ['artist']
+      list_fields = ['title', 'genre', 'album']
+      readonly_fields = ['artist']
       paginate_on = ['title']
 
     appengine_admin.admin_settings.PAGINATOR_PATH = 'path.to.paginator.Paginator'
     appengine_admin.register(AdminSong)
 
-    app = WSGIApplication([
-      (r'/admin/models(.*)$', appengine_admin.Admin),
-    ], config=app_config, debug=DEBUG)
+    app = WSGIApplication(
+      routes=appengine_admin.get_application_routes(),
+      config=app_config,
+      debug=DEBUG)
     ```
 
-4. To configure your settings, look at [`admin_settings.py`](https://github.com/humble/appengine-admin/blob/master/admin_settings.py)
+5. To configure your settings, look at [`admin_settings.py`](https://github.com/humble/appengine-admin/blob/master/admin_settings.py)
+
+6. Remember to update your index.yaml for each model class you are paginating. If you're just paginating by key, this should work:
+
+    ```python
+    - kind: Song
+      properties:
+      - name: __key__
+        direction: desc
+    ```
 
 For more details, see the [QuickStart](http://code.google.com/p/appengine-admin/wiki/QuickStart) on Google Code.
 

@@ -36,3 +36,19 @@
       </td>
     </tr>
 {%- endmacro %}
+
+
+{% macro pagination(page) -%}
+  <!-- paging -->
+  <div class='pagination'>
+    <ul>
+      <li{% if not page.has_previous() %} class='disabled'{% endif %}>
+        <a href='{{ page.get_previous_url() or '#' }}'>Previous page</a>
+      </li>
+      <li{% if not page.has_next() %} class='disabled'{% endif %}>
+        <a href='{{ page.get_next_url() or '#' }}'>Next page</a>
+      </li>
+    </ul>
+  </div>
+  <!-- END paging -->
+{%- endmacro %}

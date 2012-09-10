@@ -26,14 +26,14 @@ class FileInput(forms.widgets.Input):
     """
     input_type = 'file'
     needs_multipart_form = True
-    download_url_template = '<a href="%(base_url)s/%(model_name)s/get_blob_contents/%(field_name)s/%(itemKey)s/">File uploaded: %(fileName)s</a>&nbsp;'
+    download_url_template = '<a href="%(base_url)s/%(model_name)s/get_blob_contents/%(field_name)s/%(item_key)s/">File uploaded: %(file_name)s</a>&nbsp;'
 
     def __init__(self, *args, **kwargs):
         super(FileInput, self).__init__(*args, **kwargs)
         self.model_name = ''
         self.field_name = ''
-        self.itemKey = ''
-        self.fileName = ''
+        self.item_key = ''
+        self.file_name = ''
         self.show_download_url = False
         self.__args = args
         self.__kwargs = kwargs
@@ -52,8 +52,8 @@ class FileInput(forms.widgets.Input):
                 'base_url': admin_settings.ADMIN_BASE_URL,
                 'model_name': self.model_name,
                 'field_name': self.field_name,
-                'itemKey': self.itemKey,
-                'fileName': self.fileName,
+                'item_key': self.item_key,
+                'file_name': self.file_name,
             } + output
         return output
 
@@ -101,9 +101,9 @@ class AjaxListProperty(forms.Widget):
       'flat_attrs': flat_attrs,
       'objects': objects,
       'object_classes': object_classes,
-      'get_item_edit_url': partial(get_item_edit_url, handler=handler),
+      'get_item_edit_url': partial(self._get_item_edit_url, handler=handler),
       'name': name,
-      'paged_selector': partial(paged_selector, handler=handler),
+      'paged_selector': partial(self._paged_selector, handler=handler),
     })
 
   def value_from_datadict(self, data, files, name):
@@ -132,14 +132,14 @@ class AjaxListProperty(forms.Widget):
     data_set = set([force_unicode(value) for value in data])
     return data_set != initial_set
 
+  @staticmethod
+  def _get_item_edit_url(model_instance, handler):
+    return handler.uri_for('appengine_admin.edit', model_name=model_instance.__class__.__name__, key=model_instance.key())
 
-def get_item_edit_url(model_instance, handler):
-  return handler.uri_for('appengine_admin.edit', model_name=model_instance.__class__.__name__, key=model_instance.key())
-
-
-def paged_selector(cls, handler):
-  from . import model_register
-  from .utils import Paginator
-  model_admin = model_register.get_model_admin(cls.__name__)
-  base_url = handler.uri_for('appengine_admin.list', model_name=cls.__name__)
-  return Paginator(model_admin).get_page({}, base_url=base_url)
+  @staticmethod
+  def _paged_selector(paged_cls, handler):
+    from . import model_register
+    from .utils import Paginator
+    model_admin = model_register.get_model_admin(paged_cls.__name__)
+    base_url = handler.uri_for('appengine_admin.list', model_name=paged_cls.__name__)
+    return Paginator(model_admin).get_page({}, base_url=base_url)

@@ -16,13 +16,15 @@
 {% block content %}
 {% if item %}
   <div class='btn-group pull-right'>
-    <a href='{{ uri_for('new', model_name=model_name) }}'><div class='btn'>New {{ model_name }}</div></a>
+    <a href='{{ uri_for('new', model_name=model_name) }}'><div class='btn btn-info'>New {{ model_name }}</div></a>
   {% if item.get_absolute_url %}
     <a href='{{ item.get_absolute_url() }}' target='_blank'><div class='btn'>View &raquo;</div></a>
   {% endif %}
   </div>
 {% endif %}
-  <h1>Edit {{ item }}</h1>
+  <h1>{% if item %}
+    Edit {{ item }}
+  {% else %}New {{ model_name }}{% endif %}</h1>
 <!-- Editable properties -->
   <form id='edit-form' method='post'
         action='{% if item %}{{ uri_for('edit', model_name=model_name, key=item.key()) }}{% else %}{{ uri_for('new', model_name=model_name) }}{% endif %}'
@@ -114,6 +116,8 @@
       dateFormat: 'yy-mm-dd',
       timeFormat: 'hh:mm:ss'
     });
+
+    $('.help_text').addClass('help-block');
 
     $item_form = $('#edit-form');
 

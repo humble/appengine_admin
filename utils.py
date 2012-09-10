@@ -68,7 +68,8 @@ def safe_get_by_key(model, key):
   '''
   try:
     item = model.get(key)
-    return item
+    if item:
+      return item
   except datastore_errors.BadKeyError:
     raise Http404('Bad key format.')
   raise Http404('Item not found.')

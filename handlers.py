@@ -55,18 +55,16 @@ class BaseRequestHandler(webapp2.RequestHandler):
 
 
 class AdminHandler(BaseRequestHandler):
-  '''Use this class as the central view in your app routing.
+  '''Use this class as the central handler in your app routing.
 
   Example:
   ===
   import appengine_admin
 
-  application = webapp2.WSGIApplication([
-    ...
-    # Admin pages
-    (r'^(/admin/models)(.*)$', appengine_admin.AdminHandler),
-    ...
-  ], debug = settings.DEBUG)
+  app = WSGIApplication(
+    routes=appengine_admin.get_application_routes(),
+    config=app_config,
+    debug=DEBUG)
   ===
   '''
 
