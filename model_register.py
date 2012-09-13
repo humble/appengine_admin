@@ -55,6 +55,7 @@ class ModelAdmin(object):
   list_gql = ''
   AdminForm = None
   AdminNewForm = None
+  pre_init = None
   pre_save = None
   post_save = None
 
@@ -74,6 +75,7 @@ class ModelAdmin(object):
         form_model=self.model,
         edit_fields=self._edit_properties,
         readonly_fields=self.readonly_fields,
+        pre_init=self.pre_init,
         pre_save=self.pre_save,
         post_save=self.post_save,
       )
@@ -81,6 +83,7 @@ class ModelAdmin(object):
         form_model=self.model,
         edit_fields=[],
         readonly_fields=[],
+        pre_init=self.pre_init,
         pre_save=self.pre_save,
         post_save=self.post_save,
       )

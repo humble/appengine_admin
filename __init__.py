@@ -36,3 +36,29 @@ def get_application_routes():
   # Read only!
   admin_settings._application_routes = tuple(admin_settings._application_routes)
   return admin_settings._application_routes
+
+
+def get_webapp2_config():
+  from . import admin_settings, utils
+  if admin_settings._webapp2_config:
+    return admin_settings._webapp2_config
+
+  admin_settings._webapp2_config = {
+    'webapp2_extras.jinja2': {
+      'environment_args': {
+        'autoescape': True,  # better safe than sorry
+        # Don't check for template updates in production
+        'auto_reload': not utils.is_production(),
+        'cache_size': -1,  # never clear the cache
+        'extensions': ['jinja2.ext.with_', 'jinja2.ext.loopcontrols'],
+        # make None values output as empty strings
+        'finalize': lambda x: x if x is not None else '',
+      },
+      'globals': {
+        'DEBUG': not utils.is_production(),
+        'media_url': admin_settings.ADMIN_MEDIA_URL,
+      },
+      'template_path': admin_settings.ADMIN_TEMPLATE_PATH,
+    }
+  }
+  return admin_settings._webapp2_config

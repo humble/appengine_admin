@@ -43,6 +43,7 @@
       </div><!--/span-->
       <div class="span9">
         <div class="row-fluid">
+          {% block title %}{% endblock %}
           {% set messages = get_messages() %}
           {% if messages %}
           <div class='messages'>
@@ -54,7 +55,9 @@
             {% endfor %}
           </div>
           {% endif %}
+          {% block content_top %}{% endblock %}
           {% block content %}{% endblock %}
+          {% block content_bottom %}{% endblock %}
         </div><!--/row-->
       </div><!--/span-->
     </div><!--/row-->

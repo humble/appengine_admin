@@ -13,7 +13,7 @@
   ] %}
 {% endif %}
 
-{% block content %}
+{% block title %}
 {% if item %}
   <div class='btn-group pull-right'>
     <a href='{{ uri_for('new', model_name=model_name) }}'><div class='btn btn-info'>New {{ model_name }}</div></a>
@@ -25,6 +25,9 @@
   <h1>{% if item %}
     Edit {{ item }}
   {% else %}New {{ model_name }}{% endif %}</h1>
+{% endblock %}
+
+{% block content %}
 <!-- Editable properties -->
   <form id='edit-form' method='post'
         action='{% if item %}{{ uri_for('edit', model_name=model_name, key=item.key()) }}{% else %}{{ uri_for('new', model_name=model_name) }}{% endif %}'

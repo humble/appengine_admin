@@ -1,9 +1,11 @@
 import json
+import sys
+import traceback
 
 import webapp2
-from webapp2_extras import sessions
+from webapp2_extras import jinja2, sessions
 
-from . import authorized, model_register, render, utils
+from . import authorized, model_register, utils
 
 
 class BaseRequestHandler(webapp2.RequestHandler):
@@ -15,15 +17,23 @@ class BaseRequestHandler(webapp2.RequestHandler):
       return
     utils.notify_if_configured(reason='handler_exception',
                                exception=exception, debug_mode=debug_mode,
+                               traceback=traceback.format_exception(*sys.exc_info()),
                                session=self.session)
     self.render('500.html', {'errorpage': True})
 
+  @webapp2.cached_property
+  def jinja2(self):
+    '''Get a jinja2 renderer and cache it in the app registry.'''
+    return jinja2.get_jinja2(app=self.app)
+
   def render(self, path, template_kwargs={}):
-    template_kwargs['uri_for'] = lambda route_name, *a, **kw: self.uri_for('appengine_admin.%s' % route_name, *a, **kw)
-    template_kwargs['get_messages'] = self.get_messages
+    template_kwargs.update({
+      'uri_for': lambda route_name, *a, **kw: self.uri_for('appengine_admin.%s' % route_name, *a, **kw),
+      'get_messages': self.get_messages,
+    })
     if hasattr(self, 'models'):
       template_kwargs['models'] = self.models
-    self.response.out.write(render.template(path, template_kwargs))
+    self.response.write(self.jinja2.render_template(path, **template_kwargs))
 
   def redirect_admin(self, route_name, *args, **kwargs):
     self.redirect(self.uri_for('appengine_admin.%s' % route_name, *args, **kwargs))
@@ -107,7 +117,7 @@ class AdminHandler(BaseRequestHandler):
       })
       self.json_response(json_items)
       return
-    self.render('model_item_list.html', {
+    self.render('list.html', {
       'model_name': model_admin.model_name,
       'list_properties': model_admin._list_properties,
       'items': map(model_admin._attachListFields, items),
@@ -134,7 +144,7 @@ class AdminHandler(BaseRequestHandler):
       'model_name': model_admin.model_name,
       'item_form': item_form,
     }
-    self.render('model_item_edit.html', template_kwargs)
+    self.render('edit.html', template_kwargs)
 
   @authorized.check()
   def edit(self, model_name, key):
@@ -164,7 +174,7 @@ class AdminHandler(BaseRequestHandler):
       'item_form': item_form,
       'readonly_properties': utils.get_readonly_properties_with_values(item, model_admin),
     }
-    self.render('model_item_edit.html', template_kwargs)
+    self.render('edit.html', template_kwargs)
 
   @authorized.check()
   def delete(self, model_name, key):

@@ -28,7 +28,8 @@ body {
 }
 
 .mini-form {
- margin: 0;
+  display: inline-block;
+  margin: 0;
 }
 
 #edit-form .action-row td {

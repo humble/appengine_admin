@@ -19,12 +19,15 @@ BLOB_FIELD_META_SUFFIX = admin_settings.BLOB_FIELD_META_SUFFIX
 class AdminModelForm(djangoforms.ModelForm):
     '''Custom admin handler, override appengine's django.ModelForm defaults.'''
     enctype = ''
+    pre_init = None
     pre_save = None
     post_save = None
 
     def __init__(self, *args, **kwargs):
-      super(AdminModelForm, self).__init__(*args, **kwargs)
       instance = kwargs.get('instance', None)
+      if instance and self.pre_init:
+        instance = self.pre_init(instance)
+      super(AdminModelForm, self).__init__(*args, **kwargs)
 
       for field_name, field in self.fields.items():
         # deliver meta info to FileInput widget for file download link display
@@ -76,11 +79,11 @@ class AdminModelForm(djangoforms.ModelForm):
         * Dynamic properties saving
 
       '''
-      commit = kwargs.pop('commit')
+      commit = kwargs.pop('commit', True)
       kwargs['commit'] = False
       item = super(AdminModelForm, self).save(*args, **kwargs)
 
-      # Spcial handling for BlobProperty
+      # Special handling for BlobProperty
       for field_name, field in self.fields.items():
         if isinstance(field, FileField) and field.file_name is not None:
           meta_field_name = field_name + BLOB_FIELD_META_SUFFIX
@@ -109,13 +112,17 @@ class AdminModelForm(djangoforms.ModelForm):
         item = self.pre_save(item)
       # Save the item in Datastore if not told otherwise.
       if commit:
-          item.put()
+        item_or_result = item.put()
+        if isinstance(item_or_result, item.__class__):
+          item = item_or_result
+        elif isinstance(item_or_result, db.Key):
+          item = db.get(item_or_result)
       if self.post_save:  # hook after saving
         return self.post_save(item)
       return item
 
 
-def create(form_model, edit_fields, readonly_fields, pre_save, post_save):
+def create(form_model, edit_fields, readonly_fields, pre_init, pre_save, post_save):
     '''Factory for admin forms.
 
     Input:
@@ -123,6 +130,8 @@ def create(form_model, edit_fields, readonly_fields, pre_save, post_save):
       * edit_fields - tuple of field names that should be exposed in the form
       * readonly_fields - marked separately as read-only when editing,
                           but still editable for new instances
+      * pre_init - hook called before initializing the form, for a chance to
+                   modify the instance before editing
       * pre_save, post_save - hooks called before/after saving an item
     '''
     class AdminForm(AdminModelForm):
@@ -131,6 +140,7 @@ def create(form_model, edit_fields, readonly_fields, pre_save, post_save):
         fields = edit_fields
         exclude = readonly_fields
 
+    AdminForm.pre_init = pre_init
     AdminForm.pre_save = pre_save
     AdminForm.post_save = post_save
 

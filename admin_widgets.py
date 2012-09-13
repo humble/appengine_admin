@@ -5,7 +5,7 @@ from django.forms.util import flatatt
 from google.appengine.ext import db
 from webob.multidict import UnicodeMultiDict
 
-from . import admin_settings, render
+from . import admin_settings
 
 
 class ReferenceSelect(forms.widgets.Select):
@@ -97,14 +97,16 @@ class AjaxListProperty(forms.Widget):
     from .handlers import AdminHandler
     handler = AdminHandler()
 
-    return render.template('widgets/ajax_list_property.html', {
-      'flat_attrs': flat_attrs,
-      'objects': objects,
-      'object_classes': object_classes,
-      'get_item_edit_url': partial(self._get_item_edit_url, handler=handler),
-      'name': name,
-      'paged_selector': partial(self._paged_selector, handler=handler),
-    })
+    from webapp2_extras import jinja2
+
+    return jinja2.get_jinja2().render_template('widgets/ajax_list_property.html',
+      flat_attrs=flat_attrs,
+      objects=objects,
+      object_classes=object_classes,
+      get_item_edit_url=partial(self._get_item_edit_url, handler=handler),
+      name=name,
+      paged_selector=partial(self._paged_selector, handler=handler),
+    )
 
   def value_from_datadict(self, data, files, name):
     if isinstance(data, UnicodeMultiDict):
