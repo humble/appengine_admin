@@ -74,6 +74,34 @@
 
 5. To configure your settings, look at [`admin_settings.py`](https://github.com/humble/appengine-admin/blob/master/admin_settings.py)
 
+Custom settings below (TODO: move to separate doc).
+
+``ModelAdmin.pre_init``, ``ModelAdmin.pre_save``, ``ModelAdmin.post_save``
+==========================================================================
+
+Allow custom actions before initializing or saving the form, or after saving the form.
+
+``ModelAdmin.custom_clean``
+===========================
+
+You can have a custom callback function to validate an individual field, example:
+
+    ```python
+    from django import forms
+
+    class AdminSong(ModelAdmin):
+      # ...
+      def clean_title(self):
+        title = self.cleaned_data.get('title')
+        # do something here
+        if len(title) < 5:
+          raise forms.ValidationError('Title too short, must be at least 5 characters.')
+        return title
+      custom_clean = {
+        'title': clean_title,
+      }
+    ```
+
 6. Remember to update your index.yaml for each model class you are paginating. If you're just paginating by key, this should work:
 
     ```python

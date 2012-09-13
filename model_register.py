@@ -56,6 +56,7 @@ class ModelAdmin(object):
   AdminForm = None
   AdminNewForm = None
   pre_init = None
+  custom_clean = None
   pre_save = None
   post_save = None
 
@@ -76,6 +77,7 @@ class ModelAdmin(object):
         edit_fields=self._edit_properties,
         readonly_fields=self.readonly_fields,
         pre_init=self.pre_init,
+        custom_clean=self.custom_clean,
         pre_save=self.pre_save,
         post_save=self.post_save,
       )
@@ -84,6 +86,7 @@ class ModelAdmin(object):
         edit_fields=[],
         readonly_fields=[],
         pre_init=self.pre_init,
+        custom_clean=self.custom_clean,
         pre_save=self.pre_save,
         post_save=self.post_save,
       )

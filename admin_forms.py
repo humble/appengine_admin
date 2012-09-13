@@ -1,5 +1,6 @@
 import copy
 import datetime
+from functools import partial
 import logging
 import pickle
 
@@ -20,6 +21,7 @@ class AdminModelForm(djangoforms.ModelForm):
     '''Custom admin handler, override appengine's django.ModelForm defaults.'''
     enctype = ''
     pre_init = None
+    custom_clean = {}
     pre_save = None
     post_save = None
 
@@ -52,6 +54,11 @@ class AdminModelForm(djangoforms.ModelForm):
 
       # Special handling for dynamic properties
       self.dynamic_properties = utils.get_dynamic_properties(instance)
+
+      for prop, func in self.custom_clean.items():
+        if prop not in instance.properties().keys() + self.dynamic_properties.keys():
+          continue
+        setattr(self, 'clean_%s' % prop, partial(func, self=self))
 
     def clean(self, *args, **kwargs):
       c = super(AdminModelForm, self).clean(*args, **kwargs)
@@ -122,7 +129,7 @@ class AdminModelForm(djangoforms.ModelForm):
       return item
 
 
-def create(form_model, edit_fields, readonly_fields, pre_init, pre_save, post_save):
+def create(form_model, edit_fields, readonly_fields, pre_init, custom_clean, pre_save, post_save):
     '''Factory for admin forms.
 
     Input:
@@ -132,6 +139,8 @@ def create(form_model, edit_fields, readonly_fields, pre_init, pre_save, post_sa
                           but still editable for new instances
       * pre_init - hook called before initializing the form, for a chance to
                    modify the instance before editing
+      * custom_clean - a dict of field -> callback function for validating
+                       individual properties
       * pre_save, post_save - hooks called before/after saving an item
     '''
     class AdminForm(AdminModelForm):
@@ -141,6 +150,7 @@ def create(form_model, edit_fields, readonly_fields, pre_init, pre_save, post_sa
         exclude = readonly_fields
 
     AdminForm.pre_init = pre_init
+    AdminForm.custom_clean = custom_clean
     AdminForm.pre_save = pre_save
     AdminForm.post_save = post_save
 
