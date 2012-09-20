@@ -35,8 +35,8 @@
         <div class="well sidebar-nav">
           <ul class="nav nav-list">
             <li class="nav-header">Models</li>
-{% for model_name in models %}
-            <li{% if model_name == active_model_name %} class='active'{% endif %}><a href='{{ uri_for('list', model_name=model_name) }}'>{{ model_name }}</a></li>
+{% for side_model_name in models %}
+            <li{% if side_model_name == model_name %} class='active'{% endif %}><a href='{{ uri_for('list', model_name=side_model_name) }}'>{{ side_model_name }}</a></li>
 {% endfor %}
           </ul>
         </div><!--/.well -->

@@ -240,13 +240,13 @@ djangoforms.ReferenceProperty.get_value_for_form = _wrapped_get_value_for_form
 class ModelMultipleChoiceField(forms.MultipleChoiceField):
     default_error_messages = {
         'invalid_choice': _(u'Please select a valid choice. '
-            u'That choice is not one of the available choices.'),
+                            u'That is not one of the available choices.'),
     }
 
     def __init__(self, reference_class, query=None, choices=None,
-            required=True, widget=admin_widgets.SelectMultiple, label=None, initial=None,
-                help_text=None, *args, **kwargs):
-        """Constructor.
+                 required=True, widget=admin_widgets.SelectMultiple, label=None,
+                 initial=None, help_text=None, *args, **kwargs):
+        '''Constructor.
 
         Args:
           reference_class: required; the db.Model subclass used in the reference
@@ -256,7 +256,7 @@ class ModelMultipleChoiceField(forms.MultipleChoiceField):
             query argument (or its default)
           required, widget, label, initial, help_text, *args, **kwargs:
             like for forms.Field.__init__(); widget defaults to forms.SelectMultiple
-        """
+        '''
         assert issubclass(reference_class, db.Model)
         if query is None:
             query = db.Query(reference_class)
@@ -264,8 +264,9 @@ class ModelMultipleChoiceField(forms.MultipleChoiceField):
         self.reference_class = reference_class
         self._query = query
         self._choices = choices
-        super(ModelMultipleChoiceField, self).__init__(choices, required, widget, label, initial,
-                help_text, *args, **kwargs)
+        super(ModelMultipleChoiceField, self).__init__(
+          choices, required, widget, label, initial,
+          help_text, *args, **kwargs)
         self._update_widget_choices()
 
     def _update_widget_choices(self):

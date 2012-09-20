@@ -9,7 +9,7 @@
   return wrapper
 
 
-def is_google_admin(self, handler_method=None, check_args=[], check_kwargs={},
+def is_google_admin(handler, handler_method=None, check_args=[], check_kwargs={},
                     args=[], **kwargs):
   '''Check if the user is authenticated as a google admin user.
 
@@ -22,9 +22,9 @@ def is_google_admin(self, handler_method=None, check_args=[], check_kwargs={},
   role = check_args[0] if check_args else check_kwargs.get('role') or 'admin'
 
   if not user:
-    self.redirect(users.create_login_url(self.request.uri))
+    handler.redirect(users.create_login_url(handler.request.uri))
 
   elif role == 'user' or (role == 'admin' and users.is_current_user_admin()):
-    return handler_method(self, *args, **kwargs)
+    return handler_method(handler, *args, **kwargs)
 
-  self.error(403)  # User didn't meet role.
+  handler.error(403)  # User didn't meet role.

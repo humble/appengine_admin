@@ -2,7 +2,7 @@
 import os.path
 
 # Private variable. Use appengine_admin.get_application_routes()
-_application_routes = tuple()
+_application_routes = {}
 # Private variable. Use appengine_admin.get_webapp2_config()
 _webapp2_config = {}
 

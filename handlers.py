@@ -22,7 +22,7 @@ class BaseRequestHandler(webapp2.RequestHandler):
     self.render('500.html', {'errorpage': True})
 
   @webapp2.cached_property
-  def jinja2(self):
+  def jinja2_instance(self):
     '''Get a jinja2 renderer and cache it in the app registry.'''
     return jinja2.get_jinja2(app=self.app)
 
@@ -33,7 +33,7 @@ class BaseRequestHandler(webapp2.RequestHandler):
     })
     if hasattr(self, 'models'):
       template_kwargs['models'] = self.models
-    self.response.write(self.jinja2.render_template(path, **template_kwargs))
+    self.response.write(self.jinja2_instance.render_template(path, **template_kwargs))
 
   def redirect_admin(self, route_name, *args, **kwargs):
     self.redirect(self.uri_for('appengine_admin.%s' % route_name, *args, **kwargs))

@@ -1,24 +1,26 @@
 from webapp2_extras.routes import RedirectRoute
 
-from .handlers import AdminHandler
 from .model_register import register, ModelAdmin
 
 
-def get_application_routes():
+def get_application_routes(handler_cls=None):
   from . import admin_settings
-  if admin_settings._application_routes:
-    return admin_settings._application_routes
+  if not handler_cls:
+    from .handlers import AdminHandler
+    handler_cls = AdminHandler
+  if handler_cls.__name__ in admin_settings._application_routes:
+    return admin_settings._application_routes[handler_cls.__name__]
 
   application_routes = (
-    ('appengine_admin.index', 'GET', r'/', AdminHandler, 'index'),
-    ('appengine_admin.list', 'GET', r'/<model_name>/list/', AdminHandler, 'list'),
-    ('appengine_admin.new', None, r'/<model_name>/new/', AdminHandler, 'new'),
-    ('appengine_admin.edit', None, r'/<model_name>/edit/<key>/', AdminHandler, 'edit'),
-    ('appengine_admin.delete', 'POST', r'/<model_name>/delete/<key>/', AdminHandler, 'delete'),
-    ('appengine_admin.blob', 'GET', r'/<model_name>/blob/<field_name>/<key>/', AdminHandler, 'blob'),
+    ('appengine_admin.index', 'GET', r'/', handler_cls, 'index'),
+    ('appengine_admin.list', 'GET', r'/<model_name>/list/', handler_cls, 'list'),
+    ('appengine_admin.new', None, r'/<model_name>/new/', handler_cls, 'new'),
+    ('appengine_admin.edit', None, r'/<model_name>/edit/<key>/', handler_cls, 'edit'),
+    ('appengine_admin.delete', 'POST', r'/<model_name>/delete/<key>/', handler_cls, 'delete'),
+    ('appengine_admin.blob', 'GET', r'/<model_name>/blob/<field_name>/<key>/', handler_cls, 'blob'),
   )
 
-  admin_settings._application_routes = []
+  admin_settings._application_routes[handler_cls.__name__] = []
   for name, methods, pattern, handler_cls, handler_method in application_routes:
     if isinstance(methods, basestring):
       methods = [methods]
@@ -31,11 +33,11 @@ def get_application_routes():
                           handler=handler_cls, handler_method=handler_method,
                           strict_slash=True)
 
-    admin_settings._application_routes.append(route)
+    admin_settings._application_routes[handler_cls.__name__].append(route)
 
   # Read only!
-  admin_settings._application_routes = tuple(admin_settings._application_routes)
-  return admin_settings._application_routes
+  admin_settings._application_routes[handler_cls.__name__] = tuple(admin_settings._application_routes[handler_cls.__name__])
+  return admin_settings._application_routes[handler_cls.__name__]
 
 
 def get_webapp2_config():

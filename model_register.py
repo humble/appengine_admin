@@ -64,7 +64,7 @@ class ModelAdmin(object):
     super(ModelAdmin, self).__init__()
     # Cache model name as string
     self.model_name = str(self.model.kind())
-    self._list_properties = []
+    self._list_properties = []  # Store the list of fields that should be shown in list view.
     self._edit_properties = []
     self._readonly_properties = []
     # extract properties from model by propery names
