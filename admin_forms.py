@@ -58,7 +58,7 @@ class AdminModelForm(djangoforms.ModelForm):
       for prop, func in self.custom_clean.items():
         if prop not in instance.properties().keys() + self.dynamic_properties.keys():
           continue
-        setattr(self, 'clean_%s' % prop, partial(func, self=self))
+        setattr(self, 'clean_%s' % prop, partial(func, self))
 
     def clean(self, *args, **kwargs):
       c = super(AdminModelForm, self).clean(*args, **kwargs)

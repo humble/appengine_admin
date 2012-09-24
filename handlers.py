@@ -187,7 +187,10 @@ class AdminHandler(BaseRequestHandler):
     if not item:
       raise utils.Http404()
     item.delete()
-    self.redirect_admin('list', model_name=model_admin.model_name)
+    if self.request.get('goto'):
+      self.redirect(self.request.get('goto'))
+    else:
+      self.redirect_admin('list', model_name=model_admin.model_name)
 
   @authorized.check()
   def blob(self, model_name, field_name, key):

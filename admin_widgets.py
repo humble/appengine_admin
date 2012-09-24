@@ -99,7 +99,8 @@ class AjaxListProperty(forms.Widget):
 
     from webapp2_extras import jinja2
 
-    return jinja2.get_jinja2().render_template('widgets/ajax_list_property.html',
+    return jinja2.get_jinja2().render_template(
+      'widgets/ajax_list_property.html',
       flat_attrs=flat_attrs,
       objects=objects,
       object_classes=object_classes,
@@ -141,7 +142,15 @@ class AjaxListProperty(forms.Widget):
   @staticmethod
   def _paged_selector(paged_cls, handler):
     from . import model_register
-    from .utils import Paginator
-    model_admin = model_register.get_model_admin(paged_cls.__name__)
+    from .utils import Http404, import_path, Paginator
     base_url = handler.uri_for('appengine_admin.list', model_name=paged_cls.__name__)
-    return Paginator(model_admin).get_page({}, base_url=base_url)
+    try:
+      model_admin = model_register.get_model_admin(paged_cls.__name__)
+      paginator = Paginator(model_admin).get_page({}, base_url=base_url)
+    except Http404:
+      GenericPaginator = import_path(admin_settings.PAGINATOR_PATH)
+      paginator = GenericPaginator(
+        paged_cls,
+        per_page=admin_settings.ADMIN_ITEMS_PER_PAGE
+      ).get_page({}, base_url=base_url)
+    return paginator

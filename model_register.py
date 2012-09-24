@@ -56,7 +56,7 @@ class ModelAdmin(object):
   AdminForm = None
   AdminNewForm = None
   pre_init = None
-  custom_clean = None
+  custom_clean = {}
   pre_save = None
   post_save = None
 
