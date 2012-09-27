@@ -32,6 +32,7 @@
   <form id='edit-form' method='post'
         action='{% if item %}{{ uri_for('edit', model_name=model_name, key=item.key()) }}{% else %}{{ uri_for('new', model_name=model_name) }}{% endif %}'
     {% if item_form.enctype %}enctype='{{ item_form.enctype }}'{% endif %}>
+    {{ csrf_token() }}
 {% if item_form.errors %}
   <h3 class='text-error'>Errors</h3>
   <ul class='errorlist'>
@@ -110,7 +111,7 @@
 </table>
 </form>
 
-<form method='post' class='delete-item-form' style='display:none' action=''></form>
+<form method='post' class='delete-item-form' style='display:none' action=''>{{ csrf_token () }}</form>
 {% endblock %}
 
 {% block javascript %}
