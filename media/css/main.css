@@ -13,8 +13,14 @@ body {
   padding-top: 15px;
 }
 
-#edit-form textarea, input {
-  width: 80%;
+#edit-form textarea,
+#edit-form input[type='text'] {
+  border: 1px solid #ccc;
+  width: 600px;
+}
+#edit-form input[type='text'] {
+  line-height: 140%;
+  height: 25px;
 }
 
 #edit-form input.admin-date-widget,
@@ -60,4 +66,28 @@ body {
 .ajax_add_submit_input {
   position: relative;
   top: -4px;
+}
+
+.div-input {
+  -moz-appearance: textfield;
+  -webkit-appearance: textfield;
+  background-color: white;
+  background-color: -moz-field;
+  border: 1px solid #ccc;
+  font: -moz-field;
+  font: -webkit-small-control;
+  font-size: 12px;
+  height: 15px;
+  margin-top: 5px;
+  padding: 5px 6px;
+  width: 586px;
+}
+.div-input-disabled {
+  color: #ccc;
+}
+
+.help_text {
+  color: #666;
+  font-size: 90%;
+  padding: 8px 0;
 }

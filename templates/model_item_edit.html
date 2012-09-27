@@ -52,8 +52,11 @@
     <tbody>
     {{ action_buttons(model_name, item) }}
 {% for field in item_form %}
+  {% if field.name in item_form.dynamic_properties %}
+    {% continue %}
+  {% endif %}
     <tr id='row_{{ field.name }}' class='control-group{% if field.errors %} error{% endif %}'>
-      <td class='table-row-heading'>{{ field.label_tag()|safe }}</td>
+      <td class='table-row-heading'>{{ field.label|safe }}</td>
       <td class='table-row-value'>
         <div class='controls'>
           {{ field|safe }}
@@ -71,19 +74,11 @@
     <tr>
       <td colspan='2'><h3>Dynamic properties (specific to this instance)</h3></td>
     </tr>
-{% for prop, field in item_form.dynamic_properties.items() %}
+{% for prop in item_form.dynamic_properties.keys() %}
     <tr>
-      <td class='table-row-heading'>{{ field.verbose_name }}:</td>
+      <td class='table-row-heading'>{{ item_form[prop].label|safe }}</td>
       <td class='table-row-value'>
-  {% if field.typeName == 'BlobProperty' %}
-    {% if field.value %}
-        <a href='{{ uri_for('blob', model_name=model_name, field_name=field.name, key=item.key()) }}'>File uploaded: {{ field.meta.File_Name }}</a>
-    {% else %}
-        None
-    {% endif %}
-  {% else %}
-    {{ field.form_field|safe }}
-  {% endif %}
+  {{ item_form[prop]|safe }}
       </td>
     </tr>
 {% endfor %}
@@ -95,7 +90,7 @@
     </tr>
 {% for field in readonly_properties %}
     <tr>
-      <td class='table-row-heading'>{{ field.verbose_name }}:</td>
+      <td class='table-row-heading'>{{ field.verbose_name }}</td>
       <td class='table-row-value'>
   {% if field.typeName == 'BlobProperty' and field.value %}
         <a href='{{ self.uri_for('blob', model_name=model_name, field_name=field.name, key=item.key()) }}'>File uploaded: {{ field.meta.File_Name }}</a>
@@ -137,8 +132,12 @@
       e.stopPropagation();
       var $instance = $(this).closest('li');
       var $pagedSelector = $instance.closest('.ajax_select').find('.paged_selector');
-      if (!$pagedSelector.is(':visible')) {
-        $pagedSelector.show();
+      {# TODO: implement required for single choice #}
+      var $ajaxSelect = $instance.closest('.ajax_select');
+      if (!$ajaxSelect.data('multiple') && $ajaxSelect.data('required')) {
+        if ($ajaxSelect.find('.ajax_select_values').children().length <= 1) {
+          return;
+        }
       }
       $instance.find('input')
           .attr('disabled', 'disabled').end()
@@ -166,6 +165,9 @@
       var $item = '<li><input type=hidden name="' + $ajaxSelect.data('name') + '" value="' + $input.val()  + '"/>' +
                   '<a href="#" class="icon-remove-sign ajax_select_del"> </a> &mdash; ' +
                   '<span>Key: ' + $input.val() + '</span></li>';
+      if (!$ajaxSelect.data('multiple')) {
+        $ajaxSelect.find('.ajax_select_values').html('');
+      }
       $ajaxSelect.find('.ajax_select_values').append($item);
       $input.val('');
     });
@@ -180,12 +182,16 @@
     $('.paged_selector').delegate('.paged_selector_add', 'click', function(e) {
       e.preventDefault();
       e.stopPropagation();
-      var $item = $(this).closest('li');
+      var $item = $(this).closest('li'),
+          $ajaxSelect = $item.closest('.ajax_select');
       $item.find('.paged_selector_add')
           .removeClass('paged_selector_add icon-plus').addClass('ajax_select_del icon-remove-sign')
           .end()
         .find('input').removeAttr('disabled');
-      $item.appendTo($item.closest('.ajax_select').find('.ajax_select_values'));
+      if (!$ajaxSelect.data('multiple')) {
+        $ajaxSelect.find('.ajax_select_values').html('');
+      }
+      $item.appendTo($ajaxSelect.find('.ajax_select_values'));
     });
 
     {# TODO: skip existing objects #}

@@ -1,5 +1,5 @@
 {% from 'macros.html' import select_item with context %}
-<div class='ajax_select'{{ flat_attrs }} data-name='{{ name }}'>
+<div class='ajax_select'{{ flat_attrs }} data-name='{{ name }}' data-multiple={{ 1 if multiple else 0 }} data-required={{ 1 if required else 0 }}>
   <ul class='ajax_select_values'>
 {% for key, obj in objects %}
   {{ select_item(name, get_item_edit_url, obj, key, is_added=True) }}

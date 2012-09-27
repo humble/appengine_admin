@@ -125,8 +125,9 @@ class AdminHandler(BaseRequestHandler):
       return
     self.render('list.html', {
       'model_name': model_admin.model_name,
-      'list_properties': model_admin._list_properties,
-      'items': map(model_admin._attachListFields, items),
+      'list_class_fields': model_admin.list_model_class_iter(),
+      'list_fields': model_admin.list_model_iter,
+      'items': items,
       'page': page,
     })
 
@@ -165,24 +166,31 @@ class AdminHandler(BaseRequestHandler):
     if not item:
       raise utils.Http404()
 
+    dynamic_properties = utils.get_dynamic_properties(item)
+    for prop_name, prop_cls in dynamic_properties.items():
+      setattr(model_admin.AdminForm, prop_name, model_admin.AdminForm.converter.convert(item.__class__, prop_cls, None))
+    model_admin.AdminForm.dynamic_properties = dynamic_properties
     if self.request.method == 'POST':
-      item_form = model_admin.AdminForm(data=self.request.POST, instance=item)
-      if item_form.is_valid():
+      item_form = model_admin.AdminForm(formdata=self.request.POST, obj=item)
+      if item_form.validate():
         # Save the data, and redirect to the edit page
         item = item_form.save()
         self.add_message('%s %s updated.' % (model_name, unicode(item)))
         self.redirect_admin('edit', model_name=model_admin.model_name, key=item.key())
         return
     else:
-      item_form = model_admin.AdminForm(instance=item)
+      item_form = model_admin.AdminForm(obj=item)
 
     template_kwargs = {
       'item': item,
       'model_name': model_admin.model_name,
       'item_form': item_form,
-      'readonly_properties': utils.get_readonly_properties_with_values(item, model_admin),
+      'readonly_properties': model_admin.list_model_readonly_iter(item),
     }
     self.render('edit.html', template_kwargs)
+    for prop_name, prop_cls in dynamic_properties.items():
+      delattr(model_admin.AdminForm, prop_name)
+    
 
   @BaseRequestHandler.csrf_token_required()
   @authorized.check()

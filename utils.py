@@ -1,19 +1,8 @@
-import copy
 import logging
 import os
-import pickle
 
 from google.appengine.api import datastore_errors
 from google.appengine.ext import db
-
-
-def get_blob_properties(item, field_name):
-    from . import admin_settings
-    props = getattr(item, field_name + admin_settings.BLOB_FIELD_META_SUFFIX, None)
-    if props:
-        return pickle.loads(props)
-    else:
-        return None
 
 
 class Http404(Exception):
@@ -56,7 +45,8 @@ def get_dynamic_properties(item):
     if isinstance(value, basestring):
       dynamic_properties[prop] = db.TextProperty(verbose_name=get_human_name(prop))
       dynamic_properties[prop].value = value
-      dynamic_properties[prop].form_field = dynamic_properties[prop].get_form_field().widget.render(prop, value)
+      dynamic_properties[prop].name = prop
+    # TODO: implement properties for other data types
   return dynamic_properties
 
 
@@ -73,23 +63,6 @@ def safe_get_by_key(model, key):
   except datastore_errors.BadKeyError:
     raise Http404('Bad key format.')
   raise Http404('Item not found.')
-
-
-def get_readonly_properties_with_values(item, model_admin):
-  if not item:
-    return []
-  readonly_properties = copy.deepcopy(model_admin._readonly_properties)
-  for i, prop in enumerate(readonly_properties):
-    item_value = getattr(item, prop.name)
-    prop.value = item_value
-    if prop.typeName == 'BlobProperty':
-      logging.info("%s :: Binary content" % prop.name)
-      prop.meta = get_blob_properties(item, prop.name)
-      if prop.value:
-        prop.value = None  # release the memory
-    else:
-      logging.info("%s :: %s" % (prop.name, prop.value))
-  return readonly_properties
 
 
 def is_production():
