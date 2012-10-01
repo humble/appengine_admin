@@ -76,9 +76,26 @@ class SelectMultiple(forms.SelectMultiple):
 
 
 class AjaxListProperty(forms.Widget):
+  '''A ListProperty-compatible widget to easily manage Key entries.
+
+  Pass object_classes to suggest what types of objects are allowed for lookup.
+  The widget also includes any classes that are currently referenced
+  in the list property.
+
+  For lists of db.Key, this widget offers AJAX pagination of the above mentioned
+  classes and allows for easy add/delete of each instance.
+
+  '''
+
+  def __init__(self, attrs=None, object_classes=None):
+    super(AjaxListProperty, self).__init__(attrs=attrs)
+    self.object_classes = {kls.__name__: kls for kls in object_classes or []}
+
   def render(self, name, value, attrs=None):
+    # TODO: handle other data types
+    # this currently only works for issubclass(self.property.item_type, db.Key)
     objects = []
-    object_classes = {}
+    object_classes = self.object_classes
 
     keys = value or []
     for key in keys:
