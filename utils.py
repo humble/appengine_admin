@@ -86,7 +86,7 @@ def get_readonly_properties_with_values(item, model_admin):
       logging.info("%s :: Binary content" % prop.name)
       prop.meta = get_blob_properties(item, prop.name)
       if prop.value:
-        prop.value = True  # release the memory
+        prop.value = None  # release the memory
     else:
       logging.info("%s :: %s" % (prop.name, prop.value))
   return readonly_properties
