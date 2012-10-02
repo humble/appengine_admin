@@ -6,12 +6,11 @@ import pickle
 
 from google.appengine.api import datastore_errors
 from google.appengine.ext import db
-from google.appengine.ext.db import djangoforms
 from django import forms
 from django.forms.util import ValidationError
 from django.utils.translation import gettext as _
 
-from . import admin_settings, admin_widgets, db_extensions, utils
+from . import admin_settings, admin_widgets, djangoforms, db_extensions, utils
 
 MAX_BLOB_SIZE = admin_settings.MAX_BLOB_SIZE
 BLOB_FIELD_META_SUFFIX = admin_settings.BLOB_FIELD_META_SUFFIX
