@@ -5,10 +5,13 @@ import traceback
 import webapp2
 from webapp2_extras import jinja2, sessions
 
-from . import authorized, model_register, utils
+from . import admin_settings, authorized, model_register, utils
 
 
-class BaseRequestHandler(webapp2.RequestHandler):
+CSRFHandler = utils.import_path(admin_settings.CSRF_HANDLER_PATH)
+
+
+class BaseRequestHandler(CSRFHandler):
   def handle_exception(self, exception, debug_mode):
     if isinstance(exception, utils.Http404):
       self.error(exception.code)
@@ -30,6 +33,7 @@ class BaseRequestHandler(webapp2.RequestHandler):
     template_kwargs.update({
       'uri_for': lambda route_name, *a, **kw: self.uri_for('appengine_admin.%s' % route_name, *a, **kw),
       'get_messages': self.get_messages,
+      'csrf_token': self.get_csrf_token,
     })
     if hasattr(self, 'models'):
       template_kwargs['models'] = self.models
@@ -86,6 +90,7 @@ class AdminHandler(BaseRequestHandler):
     self.models = model_register._model_register.keys()
     self.models.sort()
 
+  @BaseRequestHandler.csrf_token_required()
   @authorized.check()
   def index(self):
     '''Admin start page.'''
@@ -93,6 +98,7 @@ class AdminHandler(BaseRequestHandler):
       'models': self.models,
     })
 
+  @BaseRequestHandler.csrf_token_required()
   @authorized.check()
   def list(self, model_name):
     '''List entities for a model by name.'''
@@ -124,6 +130,7 @@ class AdminHandler(BaseRequestHandler):
       'page': page,
     })
 
+  @BaseRequestHandler.csrf_token_required()
   @authorized.check()
   def new(self, model_name):
     '''Handle creating a new record for a particular model.'''
@@ -146,6 +153,7 @@ class AdminHandler(BaseRequestHandler):
     }
     self.render('edit.html', template_kwargs)
 
+  @BaseRequestHandler.csrf_token_required()
   @authorized.check()
   def edit(self, model_name, key):
     '''Edit an editing existing record for a particular model.
@@ -176,6 +184,7 @@ class AdminHandler(BaseRequestHandler):
     }
     self.render('edit.html', template_kwargs)
 
+  @BaseRequestHandler.csrf_token_required()
   @authorized.check()
   def delete(self, model_name, key):
     '''Delete a record for a particular model.
@@ -187,8 +196,12 @@ class AdminHandler(BaseRequestHandler):
     if not item:
       raise utils.Http404()
     item.delete()
-    self.redirect_admin('list', model_name=model_admin.model_name)
+    if self.request.get('goto'):
+      self.redirect(self.request.get('goto'))
+    else:
+      self.redirect_admin('list', model_name=model_admin.model_name)
 
+  @BaseRequestHandler.csrf_token_required()
   @authorized.check()
   def blob(self, model_name, field_name, key):
     '''Returns blob field contents.'''

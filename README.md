@@ -122,6 +122,7 @@ There may be more to come.
 ## <span name="dependencies">Dependencies</span>
 
 * [gae_paginator](https://github.com/humble/gae_paginator)
+* [gae_csrf](https://github.com/humble/gae_csrf)
 
 ## <span name="faq">FAQ</span>
 

@@ -17,4 +17,15 @@
     debug=DEBUG)
   ```
 
+* Specify object_classes for AjaxListProperty widget, useful when creating new objects:
+
+  ```python
+  class Item(db.Expando):
+    pass
+
+  class YourModel(db.Expando):
+    items = db.ListProperty(db.Key)
+    items.object_classes = [Item]
+  ```
+
 * Go through settings and explain each

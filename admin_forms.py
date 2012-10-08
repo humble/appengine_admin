@@ -55,9 +55,9 @@ class AdminModelForm(djangoforms.ModelForm):
       self.dynamic_properties = utils.get_dynamic_properties(instance)
 
       for prop, func in self.custom_clean.items():
-        if prop not in instance.properties().keys() + self.dynamic_properties.keys():
+        if prop not in self._meta.model.properties().keys() + self.dynamic_properties.keys():
           continue
-        setattr(self, 'clean_%s' % prop, partial(func, self=self))
+        setattr(self, 'clean_%s' % prop, partial(func, self))
 
     def clean(self, *args, **kwargs):
       c = super(AdminModelForm, self).clean(*args, **kwargs)
@@ -328,7 +328,7 @@ class ModelMultipleChoiceField(forms.MultipleChoiceField):
 
 
 class MultipleChoiceField(forms.fields.MultipleChoiceField):
-    def __init__(self, choices=(), required=True, widget=admin_widgets.SelectMultiple, label=None, initial=None, help_text=None):
+    def __init__(self, choices=(), required=True, widget=admin_widgets.SelectMultiple, label=None, initial=None, help_text=None, item_type=None):
         """Translates choices to Django style: [('key1', 'name1'), ('key2', 'name2')] instead of ['name1', 'name2']
         """
         choices = [(item, item) for item in choices]
@@ -336,22 +336,30 @@ class MultipleChoiceField(forms.fields.MultipleChoiceField):
 
 
 class ListPropertyField(forms.fields.MultipleChoiceField):
-    def __init__(self, choices=(), required=True, widget=admin_widgets.AjaxListProperty, label=None, initial=None, help_text=None):
+    def __init__(self, choices=(), required=True, widget=admin_widgets.AjaxListProperty, label=None, initial=None, help_text=None, item_type=None):
         """Translates choices to Django style: [('key1', 'name1'), ('key2', 'name2')] instead of ['name1', 'name2']
         """
         choices = [(item, item) for item in choices]
         super(ListPropertyField, self).__init__(choices, required, widget, label, initial, help_text)
+        self.item_type = item_type
+        self.widget.item_type = item_type
 
     def clean(self, value):
       if self.choices:
         return super(ListPropertyField, self).clean(value)
-      keys = []
-      for str_key in value:
-        if not str_key:
-          continue
-        keys.append(db.Key(str_key))
-      return keys
-      return keys
+
+      if issubclass(self.item_type, db.Key):
+        keys = []
+        for str_key in value:
+          if not str_key:
+            continue
+          keys.append(db.Key(str_key))
+        return keys
+      elif issubclass(self.item_type, basestring):
+        return value
+
+      # else:  # TODO: handle other data types
+      return value
 
 
 class ListProperty(db.ListProperty):
@@ -359,8 +367,16 @@ class ListProperty(db.ListProperty):
 
   def get_form_field(self, **kwargs):
     '''Return a Django form field appropriate for a ListProperty.'''
+    widget = admin_widgets.AjaxListProperty
+    # If the property specifies what model classes it should look up, pass those to
+    # the widget. This can be useful when creating new entries, since a db.Key
+    # reference can be any kind of entity.
+    # Note that this only works for ListProperty(db.Key)
+    if hasattr(self, 'object_classes'):
+      widget = widget(object_classes=self.object_classes)
     defaults = {'form_class': ListPropertyField,
-                'widget': admin_widgets.AjaxListProperty}
+                'widget': widget,
+                'item_type': self.item_type}
     defaults.update(kwargs)
     return super(ListProperty, self).get_form_field(**defaults)
 

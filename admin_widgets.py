@@ -76,9 +76,26 @@ class SelectMultiple(forms.SelectMultiple):
 
 
 class AjaxListProperty(forms.Widget):
+  '''A ListProperty-compatible widget to easily manage Key entries.
+
+  Pass object_classes to suggest what types of objects are allowed for lookup.
+  The widget also includes any classes that are currently referenced
+  in the list property.
+
+  For lists of db.Key, this widget offers AJAX pagination of the above mentioned
+  classes and allows for easy add/delete of each instance.
+
+  '''
+
+  def __init__(self, attrs=None, object_classes=None):
+    super(AjaxListProperty, self).__init__(attrs=attrs)
+    self.object_classes = {kls.__name__: kls for kls in object_classes or []}
+
   def render(self, name, value, attrs=None):
+    # TODO: handle other data types
+    # this currently only works for issubclass(self.property.item_type, db.Key)
     objects = []
-    object_classes = {}
+    object_classes = self.object_classes
 
     keys = value or []
     for key in keys:
@@ -99,7 +116,8 @@ class AjaxListProperty(forms.Widget):
 
     from webapp2_extras import jinja2
 
-    return jinja2.get_jinja2().render_template('widgets/ajax_list_property.html',
+    return jinja2.get_jinja2().render_template(
+      'widgets/ajax_list_property.html',
       flat_attrs=flat_attrs,
       objects=objects,
       object_classes=object_classes,
@@ -141,7 +159,15 @@ class AjaxListProperty(forms.Widget):
   @staticmethod
   def _paged_selector(paged_cls, handler):
     from . import model_register
-    from .utils import Paginator
-    model_admin = model_register.get_model_admin(paged_cls.__name__)
+    from .utils import Http404, import_path, Paginator
     base_url = handler.uri_for('appengine_admin.list', model_name=paged_cls.__name__)
-    return Paginator(model_admin).get_page({}, base_url=base_url)
+    try:
+      model_admin = model_register.get_model_admin(paged_cls.__name__)
+      paginator = Paginator(model_admin).get_page({}, base_url=base_url)
+    except Http404:
+      GenericPaginator = import_path(admin_settings.PAGINATOR_PATH)
+      paginator = GenericPaginator(
+        paged_cls,
+        per_page=admin_settings.ADMIN_ITEMS_PER_PAGE
+      ).get_page({}, base_url=base_url)
+    return paginator
