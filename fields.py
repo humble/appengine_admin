@@ -5,6 +5,7 @@ from wtforms import fields as f
 
 
 class DateTimeField(f.DateTimeField):
+  '''Custom DateTimeField that use the appengine_admin DateTimeTextInput.'''
   widget = widgets.DateTimeTextInput()
 
   def __init__(self, *args, **kwargs):
@@ -12,6 +13,7 @@ class DateTimeField(f.DateTimeField):
 
 
 class DateField(f.DateField):
+  '''Custom DateField that use the appengine_admin DateTextInput.'''
   widget = widgets.DateTextInput()
 
   def __init__(self, *args, **kwargs):
@@ -19,6 +21,15 @@ class DateField(f.DateField):
 
 
 class AjaxKeyField(f.Field):
+  '''A field with an AJAX paginator widget.
+
+  Presents a UI for paginating with AJAX and easily adding/removing Key instances,
+  either by str(key) values or with a UI list of objects (based on object_classes).
+
+  Used for:
+    * db.ListProprety (with multiple=True)
+    * db.ReferenceProperty(db.Key) (with multiple=False)
+  '''
   def __init__(self, label=None, validators=None, multiple=True,
                object_classes=None, required=False, **kwargs):
     super(AjaxKeyField, self).__init__(label, validators, **kwargs)

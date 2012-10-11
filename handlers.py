@@ -190,7 +190,6 @@ class AdminHandler(BaseRequestHandler):
     self.render('edit.html', template_kwargs)
     for prop_name, prop_cls in dynamic_properties.items():
       delattr(model_admin.AdminForm, prop_name)
-    
 
   @BaseRequestHandler.csrf_token_required()
   @authorized.check()

@@ -5,12 +5,14 @@ from wtforms import widgets as w
 
 
 class DateTextInput(w.TextInput):
+  '''Custom datetime text widget with an added class for easy JavaScript targeting.'''
   def __call__(self, *args, **kwargs):
     kwargs.setdefault('class', 'admin-date')
     return super(DateTextInput, self).__call__(*args, **kwargs)
 
 
 class DateTimeTextInput(w.TextInput):
+  '''Custom date text widget with an added class for easy JavaScript targeting.'''
   def __call__(self, *args, **kwargs):
     kwargs.setdefault('class', 'admin-datetime')
     return super(DateTimeTextInput, self).__call__(*args, **kwargs)

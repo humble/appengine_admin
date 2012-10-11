@@ -1,6 +1,3 @@
-from google.appengine.api import datastore_errors
-from google.appengine.ext import db
-
 from . import admin_forms, utils
 
 
@@ -66,6 +63,10 @@ class ModelAdmin(object):
     )
 
   def list_model_iter(self, model):
+    '''Create a generator to iterate through the list fields for an instance.
+
+    Used to generate the rows when listing objects.
+    '''
     for field_name in self.list_fields:
       if isinstance(field_name, basestring):
         yield getattr(model, field_name)
@@ -73,6 +74,10 @@ class ModelAdmin(object):
         yield callable(model)
 
   def list_model_class_iter(self):
+    '''Create a generator to iterate through the list fields for the model class.
+
+    Used to generate the row heading when listing objects.
+    '''
     model_class = self.model
     for field_name in self.list_fields:
       if isinstance(field_name, basestring):
@@ -81,6 +86,10 @@ class ModelAdmin(object):
         yield PropertyMap(field_name.__name__, field_name)
 
   def list_model_readonly_iter(self, model):
+    '''Create a generator to iterate through the read-only fields for an instance.
+
+    Used to generate the list of readonly properties when editing an item.
+    '''
     for field_name in self.readonly_fields:
       yield PropertyMap(field_name, getattr(self.model, field_name), getattr(model, field_name))
 
