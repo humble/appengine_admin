@@ -7,7 +7,7 @@ _application_routes = {}
 _webapp2_config = {}
 
 # Admin templates are found here. Prepend your own path to extend the templates.
-ADMIN_TEMPLATE_PATH = [
+ADMIN_TEMPLATE_PATHS = [
   os.path.join(os.path.abspath(os.path.dirname(__file__)), 'templates')
 ]
 

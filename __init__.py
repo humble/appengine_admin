@@ -60,7 +60,7 @@ def get_webapp2_config():
         'DEBUG': not utils.is_production(),
         'media_url': admin_settings.ADMIN_MEDIA_URL,
       },
-      'template_path': admin_settings.ADMIN_TEMPLATE_PATH,
+      'template_path': admin_settings.ADMIN_TEMPLATE_PATHS,
     }
   }
   return admin_settings._webapp2_config
