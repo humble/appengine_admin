@@ -6,13 +6,13 @@ from wtforms.ext.appengine.db import ModelConverter, model_form
 
 class WTForm(wtforms.Form):
   def __init__(self, formdata=None, obj=None, prefix='', **kwargs):
-    if obj and self.pre_init:
-      obj = self.pre_init(obj)
+    if self.pre_init:
+      obj = self.pre_init(self, obj)
     self.instance = obj
 
-    # Special handling for dynamic properties
-
     super(WTForm, self).__init__(formdata=formdata, obj=obj, prefix=prefix, **kwargs)
+    if self.post_init:
+      obj = self.post_init(self, obj)
 
   def validate(self):
     """
@@ -54,7 +54,7 @@ class WTForm(wtforms.Form):
       setattr(instance, name, value)
 
     if self.pre_save:
-      instance = self.pre_save(instance)
+      instance = self.pre_save(self, instance)
 
     if put:
       instance_or_result = instance.put()
@@ -65,7 +65,7 @@ class WTForm(wtforms.Form):
         instance = db.get(instance_or_result)
 
       if self.post_save:
-        return self.post_save(instance)
+        return self.post_save(self, instance)
 
     return instance
 
@@ -120,7 +120,8 @@ class AdminConverter(ModelConverter):
 
 
 def create(model, only=None, exclude=None, base_class=WTForm, converter=None,
-           pre_init=None, pre_save=None, post_save=None, field_validators=None):
+           pre_init=None, post_init=None, pre_save=None, post_save=None,
+           field_validators=None):
   '''Factory for admin forms.
 
   Input:
@@ -128,9 +129,16 @@ def create(model, only=None, exclude=None, base_class=WTForm, converter=None,
     * only - tuple of field names that should be exposed in the form
     * exclude - marked separately as read-only when editing,
                 but still editable for new instances
+
+  All the following receive the form and the object as parameters:
+  (Note that the object may be None for new model instances)
     * pre_init - hook called before initializing the form, for a chance to
                  modify the instance before editing
+    * post_init - hook called immediately after initializing the form, can be useful
+                  to modify the form before display
     * pre_save, post_save - hooks called before/after saving an item
+
+  All the following receive the form and the field as parameters:
     * field_validators - a dict of field -> callback function for validating
                          individual properties
   '''
@@ -139,6 +147,7 @@ def create(model, only=None, exclude=None, base_class=WTForm, converter=None,
     model=model, base_class=base_class, only=only, exclude=exclude, converter=converter)
   form.model = model
   form.pre_init = pre_init
+  form.post_init = post_init
   form.pre_save = pre_save
   form.post_save = post_save
   if field_validators:

@@ -25,7 +25,7 @@ class ModelAdmin(object):
       * list_fields - list of field names that should be shown in list view
       * edit_fields - list of field names that that should be editable
       * readonly_fields - list of field names that should be read-only
-      * pre_init, pre_save, post_save, field_validators
+      * pre_init, post_init, pre_save, post_save, field_validators
           - customize a model instance before init, before/after save, or with
             per-field processing/cleaning
           - see admin_forms.create for more details
@@ -36,6 +36,7 @@ class ModelAdmin(object):
   edit_fields = ()
   readonly_fields = ()
   pre_init = None
+  post_init = None
   pre_save = None
   post_save = None
   field_validators = None
@@ -49,6 +50,7 @@ class ModelAdmin(object):
       only=self.edit_fields,
       exclude=self.readonly_fields,
       pre_init=self.pre_init,
+      post_init=self.post_init,
       pre_save=self.pre_save,
       post_save=self.post_save,
       field_validators=self.field_validators
@@ -57,6 +59,7 @@ class ModelAdmin(object):
     self.AdminNewForm = admin_forms.create(
       model=self.model,
       pre_init=self.pre_init,
+      post_init=self.post_init,
       pre_save=self.pre_save,
       post_save=self.post_save,
       field_validators=self.field_validators,
