@@ -52,9 +52,14 @@ class AjaxKeyWidget(object):
       objects=field.objects,
       object_classes=field.object_classes,
       get_item_edit_url=partial(self._get_item_edit_url, handler=handler),
+      get_reference_key=self._get_reference_key,
       name=field.name,
       paged_selector=partial(self._paged_selector, handler=handler),
     )
+
+  @staticmethod
+  def _get_reference_key(obj):
+    return obj.admin_reference_key() if hasattr(obj, 'admin_reference_key') else obj.key()
 
   @staticmethod
   def _get_item_edit_url(model_instance, handler):

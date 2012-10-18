@@ -18,7 +18,6 @@
     {% else %}
       <a href='#' class='icon-plus paged_selector_add'> </a>
     {% endif %}
-    &mdash;
     <input type=hidden{% if not is_added %} disabled=disabled{% endif %} name='{{ name }}' value='{{ key }}'/>
     <span>{{ obj.__class__.__name__ if obj else '%class_name%' }}: <a href='{{ get_item_edit_url(obj) if obj else '#' }}'>{{ obj }}</a></span>
   </li>

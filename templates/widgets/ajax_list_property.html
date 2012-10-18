@@ -18,7 +18,7 @@
   {% set page = paged_selector(cls) %}
   {% for obj in page %}
     {# TODO skip existing objects #}
-    {{ select_item(name, get_item_edit_url, obj, obj.key(), is_added=False) }}
+    {{ select_item(name, get_item_edit_url, obj, get_reference_key(obj), is_added=False) }}
   {% endfor %}
   {% if page.has_next() %}
           <li><a href='{{ page.get_next_url() }}&ajax_mini_page=1' class='paged_selector_next'>Show more</a></li>

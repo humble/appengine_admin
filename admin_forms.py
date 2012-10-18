@@ -7,12 +7,12 @@ from wtforms.ext.appengine.db import ModelConverter, model_form
 class WTForm(wtforms.Form):
   def __init__(self, formdata=None, obj=None, prefix='', **kwargs):
     if self.pre_init:
-      obj = self.pre_init(self, obj)
+      obj = self.pre_init(self, obj, formdata)
     self.instance = obj
 
     super(WTForm, self).__init__(formdata=formdata, obj=obj, prefix=prefix, **kwargs)
     if self.post_init:
-      obj = self.post_init(self, obj)
+      obj = self.post_init(self, obj, formdata)
 
   def validate(self):
     """

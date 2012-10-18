@@ -36,13 +36,11 @@ class AjaxKeyField(f.Field):
 
     self.multiple = multiple
     self.required = required
-    self._object_classes = {kls.__name__: kls for kls in object_classes or []}
+    self.object_classes = {kls.__name__: kls for kls in object_classes or []}
     self.widget = widgets.AjaxKeyWidget(multiple=multiple)
 
   def process_formdata(self, valuelist):
     self.objects = []
-    self.object_classes = {}
-    self.object_classes.update(self._object_classes)
     if not self.multiple:
       if not valuelist:
         self.data = None
@@ -78,6 +76,5 @@ class AjaxKeyField(f.Field):
       keys.append(key)
       obj = db.get(key)
       self.objects.append((key, obj))
-      self.object_classes[obj.__class__.__name__] = obj.__class__
 
     self.data = keys
