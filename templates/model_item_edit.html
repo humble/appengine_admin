@@ -132,7 +132,6 @@
       e.stopPropagation();
       var $instance = $(this).closest('li');
       var $pagedSelector = $instance.closest('.ajax_select').find('.paged_selector');
-      {# TODO: implement required for single choice #}
       var $ajaxSelect = $instance.closest('.ajax_select');
       if (!$ajaxSelect.data('multiple') && $ajaxSelect.data('required')) {
         if ($ajaxSelect.find('.ajax_select_values').children().length <= 1) {

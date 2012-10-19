@@ -55,7 +55,6 @@ class AjaxKeyField(f.Field):
       self.objects.append((value.key(), value))
       return
 
-    # TODO: consider self.multiple
     if not valuelist:
       self.data = []
       return
