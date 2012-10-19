@@ -2,6 +2,8 @@
 
 `appengine_admin` is a flexible datastore admin for app engine. [MIT licensed](http://en.wikipedia.org/wiki/MIT_License).
 
+This is a fork from the [original mirror](https://github.com/darvin/appengine-admin) that is now different enough to justify not being an official fork :)
+
 * <a href="#start">Getting Started</a>
 * <a href="#features">Features</a>
 * <a href="#dependencies">Dependencies</a>
@@ -12,11 +14,12 @@
 
 1. Download this repository's source and copy the `appengine_admin/` folder at the root of your App Engine project directory.
 
-2. Install [gae_paginator](https://github.com/humble/gae_paginator) and configure the setting for it like so:
+2. Install [gae_paginator](https://github.com/humble/gae_paginator) and [gae_csrf](https://github.com/humble/gae_csrf) and configure their settings:
 
    ```python
     import appengine_admin
     appengine_admin.admin_settings.PAGINATOR_PATH = 'path.to.paginator.Paginator'
+    appengine_admin.admin_settings.CSRF_HANDLER_PATH = 'path.to.gae_csrf.handlers.CSRFRequestHandler'
     ```
 
 3. Update your app.yaml to add the URLs:
@@ -31,7 +34,7 @@
       secure: always
     ```
 
-4. Use it like so, in your handlers (__full working example__):
+4. Use it in your handlers (__full working example__):
 
     ```python
     import appengine_admin
@@ -72,7 +75,7 @@
       debug=DEBUG)
     ```
 
-5. To configure your settings, look at [`admin_settings.py`](https://github.com/humble/appengine-admin/blob/master/admin_settings.py)
+5. To configure your settings, look at [`admin_settings.py`](https://github.com/humble/appengine_admin/blob/master/admin_settings.py)
 
 Custom settings below (TODO: move to separate doc).
 
@@ -111,11 +114,11 @@ You can have a custom callback function to validate an individual field, example
         direction: desc
     ```
 
-For more details, see the [QuickStart](http://code.google.com/p/appengine-admin/wiki/QuickStart) on Google Code.
-
 ## <span name="features">Features</span>
 
-Most features are the ones listed on the original [Appengine Admin project page](http://code.google.com/p/appengine-admin/wiki/Features).
+TODO: add features
+
+Most features are the ones listed on the now too-outdated-to-be-genuine-fork fork [Appengine Admin project page](http://code.google.com/p/appengine-admin/wiki/Features).
 
 There may be more to come.
 
@@ -131,4 +134,4 @@ There may be more to come.
 
 ## <span name="todo">TODO</span>
 
-See the [Issues](https://github.com/humble/appengine-admin/issues) on GitHub for details. And help out!
+See the [Issues](https://github.com/humble/appengine_admin/issues) on GitHub for details. And help out!
