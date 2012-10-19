@@ -101,7 +101,7 @@ def convert_ReferenceProperty(model, prop, kwargs):
   """Returns a form field for a ``db.ReferenceProperty``."""
   kwargs.setdefault('required', prop.required)
   return fields.AjaxKeyField(multiple=False,
-                             object_classes=[prop.reference_class],
+                             object_classes=getattr(prop, 'object_classes', [prop.reference_class]),
                              **kwargs)
 
 
