@@ -137,8 +137,8 @@ class AdminHandler(BaseRequestHandler):
     '''Handle creating a new record for a particular model.'''
     model_admin = model_register.get_model_admin(model_name)
     if self.request.method == 'POST':
-      item_form = model_admin.AdminNewForm(data=self.request.POST)
-      if item_form.is_valid():
+      item_form = model_admin.AdminNewForm(formdata=self.request.POST)
+      if item_form.validate():
         # Save the data, and redirect to the edit page
         item = item_form.save()
         self.add_message('%s %s created!' % (model_name, unicode(item)))
