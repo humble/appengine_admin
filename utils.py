@@ -17,6 +17,11 @@ def import_path(path):
     return getattr(actual_module, class_name)
 
 
+def import_pytz():  # XXX: import pytz in a less hacky way
+    from global_modules.pytz.gae import pytz
+    return pytz
+
+
 class Paginator(object):
   def __init__(self, model_admin, items_per_page=None):
     from . import admin_settings

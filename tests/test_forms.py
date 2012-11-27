@@ -60,8 +60,8 @@ class FormSaveTests(TestCase):
       ('none_string_p', ''),
       ('boolean_p', 'y'),  # front-end-formatting
       # 'boolean_p_def' value should be changed to False, since it is not submitted
-      ('datetime_p', '2012-12-13 23:00:00'),  # front-end formatting
-      ('datetime_p_def', '2012-11-12 13:14:00'),
+      ('datetime_p', '2012-12-13 23:00:00 UTC'),  # front-end formatting
+      ('datetime_p_def', '2012-11-12 05:14:00 America/Los_Angeles'),
       ('list_p', str(self.subproject1.key())),
       ('list_p_obj_classes', str(self.subproject2.key())),
       ('list_p_obj_classes', str(self.subproject1.key())),
@@ -74,6 +74,7 @@ class FormSaveTests(TestCase):
     unchanged_props = ('string_p', 'none_string_p', 'string_p_def', 'boolean_p', 'datetime_p', 'datetime_p_def', 'text_p')
 
     new_project = form.save()
+    self.project1 = db.get(self.project1.key())
     # Make sure unchanged properties are the same
     for prop in unchanged_props:
       self.assertEquals(getattr(self.project1, prop), getattr(new_project, prop))
@@ -94,8 +95,8 @@ class FormSaveTests(TestCase):
     formdata = MultiDict([
       ('boolean_p', 'y'),  # front-end-formatting
       # 'boolean_p_def' value should be changed to False, since it is not submitted
-      ('datetime_p', '2012-12-13 23:00:00'),  # front-end formatting
-      ('datetime_p_def', '2012-11-12 13:14:00'),
+      ('datetime_p', '2012-12-13 23:00:00 UTC'),  # front-end formatting
+      ('datetime_p_def', '2012-11-12 13:14:00 UTC'),
       ('list_p', str(self.subproject1.key())),
       ('list_p_obj_classes', str(self.subproject2.key())),
       ('list_p_obj_classes', str(self.subproject1.key())),

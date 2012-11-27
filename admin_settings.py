@@ -37,3 +37,6 @@ CSRF_HANDLER_PATH = 'gae_csrf.handlers.CSRFRequestHandler'
 # Set this to your custom notification callback
 # Useful e.g. when errors occur in the admin handler
 NOTIFY_CALLBACK = None
+
+# Default timezone for use in admin dates
+TIMEZONE = 'America/Los_Angeles'

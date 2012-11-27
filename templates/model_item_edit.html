@@ -111,9 +111,25 @@
 
 {% block javascript %}
   <script type='text/javascript'>
+    var jsTimezone = jstz.determine().name();
+    var timezoneList = [jsTimezone, 'UTC'];
+    if (jsTimezone !== '{{ settings.TIMEZONE }}') {
+      timezoneList.unshift('{{ settings.TIMEZONE }}');
+    }
+    // work around a bug in datepicker
+    originalParseTime = $.datepicker.parseTime;
+    $.datepicker.parseTime = function(timeFormat, timeString, timeSettings) {
+      timeString = $.trim(timeString).split(' ')[0];
+      return originalParseTime(timeFormat, timeString, timeSettings);
+    };
+    // end workaround
     $('.admin-datetime').datetimepicker({
       dateFormat: 'yy-mm-dd',
-      timeFormat: 'hh:mm:ss'
+      showTime: false,
+      showTimezone: true,
+      timeFormat: "hh:mm:ss z",
+      timezoneText: 'Zone',
+      timezoneList: timezoneList,
     });
 
     $('.help_text').addClass('help-block');

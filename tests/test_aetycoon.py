@@ -19,10 +19,10 @@ try:
     has_decimal = False
     decimal_prop_cls = db.StringProperty
 
-  class SubProject(db.Model):
+  class AESubProject(db.Model):
     name = db.StringProperty()
 
-  class Project(db.Model):
+  class AEProject(db.Model):
     string_p = db.StringProperty()
     decimal_p = decimal_prop_cls(default='9.99')
     pickle_p = aetycoon.PickleProperty(default={})
@@ -32,8 +32,8 @@ try:
     def derived_p(self):
       return self.string_p[::-1] if self.string_p else 'enoN'
 except ImportError:
-  SubProject = None
-  Project = None
+  AESubProject = None
+  AEProject = None
 
 
 def put_cls(cls, **kwargs):
@@ -44,12 +44,12 @@ def put_cls(cls, **kwargs):
 
 class FormSaveTests(TestCase):
   def extendedSetUp(self):
-    if not SubProject or not Project:
+    if not AESubProject or not AEProject:
       raise SkipTest
-    self.subproject1 = put_cls(SubProject, name='subproject 1')
-    self.subproject2 = put_cls(SubProject, name='subproject 2')
+    self.subproject1 = put_cls(AESubProject, name='subproject 1')
+    self.subproject2 = put_cls(AESubProject, name='subproject 2')
     self.project1 = put_cls(
-      Project, string_p='Project 1', decimal_p='1.99',
+      AEProject, string_p='Project 1', decimal_p='1.99',
       pickle_p={'key_bool': True, 'key_int': 3, 'key_decimal': Decimal('2.02'), 'key_string': 'Some\nvalue'},
     )
 
@@ -64,7 +64,7 @@ class FormSaveTests(TestCase):
       ('lowercase_p', 'PROJECT ONE'),
       ('derived_p', 'fail'),
     ])
-    form_cls = admin_forms.create(Project)
+    form_cls = admin_forms.create(AEProject)
     form = form_cls(formdata=formdata, obj=self.project1)
     self.assertTrue(form.validate())
 
@@ -90,7 +90,7 @@ class FormSaveTests(TestCase):
       ('string_p', 'ProJect 1'),
       ('pickle_p', "{'inval\nid'}"),
     ])
-    form_cls = admin_forms.create(Project)
+    form_cls = admin_forms.create(AEProject)
     form = form_cls(formdata=formdata, obj=self.project1)
     self.assertFalse(form.validate())
     self.assertEquals({'pickle_p': ['Could not pickle set value.']}, form.errors)

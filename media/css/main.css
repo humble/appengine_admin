@@ -59,6 +59,10 @@ body {
   width: 40%;
 }
 
+.ui_tpicker_timezone select {
+  width: auto;
+}
+
 .ajax_add_key_input {
   width: 40%;
 }

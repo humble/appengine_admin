@@ -34,6 +34,9 @@ class BaseRequestHandler(CSRFHandler):
       'uri_for': lambda route_name, *a, **kw: self.uri_for('appengine_admin.%s' % route_name, *a, **kw),
       'get_messages': self.get_messages,
       'csrf_token': self.get_csrf_token,
+      'settings': {
+        'TIMEZONE': admin_settings.TIMEZONE,
+      }
     })
     if hasattr(self, 'models'):
       template_kwargs['models'] = self.models
