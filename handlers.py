@@ -112,7 +112,7 @@ class AdminHandler(BaseRequestHandler):
     items = list(page)
     if self.request.get('ajax_mini_page'):
       json_items = [{
-        'key': str(item.key()),
+        'key': str(item.admin_reference_key() if hasattr(item, 'admin_reference_key') else item.key()),
         'name': unicode(item),
         'model_name': model_name,
         'edit_url': self.uri_for('appengine_admin.edit', model_name=model_name, key=item.key())
