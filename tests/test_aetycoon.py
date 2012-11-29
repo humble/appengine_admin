@@ -49,7 +49,7 @@ class FormSaveTests(TestCase):
     self.subproject1 = put_cls(AESubProject, name='subproject 1')
     self.subproject2 = put_cls(AESubProject, name='subproject 2')
     self.project1 = put_cls(
-      AEProject, string_p='Project 1', decimal_p='1.99',
+      AEProject, string_p='Project 1', decimal_p=Decimal('1.99') if has_decimal else '1.99',
       pickle_p={'key_bool': True, 'key_int': 3, 'key_decimal': Decimal('2.02'), 'key_string': 'Some\nvalue'},
     )
 
@@ -59,7 +59,7 @@ class FormSaveTests(TestCase):
   def test_should_save_aetycoon_properties_properly(self):
     formdata = MultiDict([
       ('string_p', 'ProJect 1'),
-      ('decimal_p', '1.99'),
+      ('decimal_p', Decimal('1.99') if has_decimal else '1.99'),
       ('pickle_p', "{'key_bool': True, 'key_int': 3, 'key_decimal': Decimal('2.02'), 'key_string': 'Some\\nvalue'}"),
       ('lowercase_p', 'PROJECT ONE'),
       ('derived_p', 'fail'),

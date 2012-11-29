@@ -86,6 +86,11 @@ def convert_DateProperty(model, prop, kwargs):
   return fields.DateField(format='%Y-%m-%d', **kwargs)
 
 
+def convert_DecimalProperty(model, prop, kwargs):
+  """Returns a form field for a ``db.DecimalProperty``."""
+  return wtforms.fields.DecimalField(places=None, **kwargs)
+
+
 def convert_ListProperty(model, prop, kwargs):
   """Returns a form field for a ``db.ListProperty``."""
   if prop.item_type == db.Key:
@@ -110,6 +115,7 @@ class AdminConverter(ModelConverter):
     self.default_converters.update({
       'DateTimeProperty': convert_DateTimeProperty,
       'DateProperty': convert_DateProperty,
+      'DecimalProperty': convert_DecimalProperty,
       'ListProperty': convert_ListProperty,
       'ReferenceProperty': convert_ReferenceProperty,
     })
