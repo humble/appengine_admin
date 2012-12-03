@@ -35,6 +35,8 @@ class ModelAdmin(object):
   list_fields = ()
   edit_fields = ()
   readonly_fields = ()
+  new_fields = ()
+  new_readonly_fields = ()
   pre_init = None
   post_init = None
   pre_save = None
@@ -58,6 +60,8 @@ class ModelAdmin(object):
 
     self.AdminNewForm = admin_forms.create(
       model=self.model,
+      only=self.new_fields,
+      exclude=self.new_readonly_fields,
       pre_init=self.pre_init,
       post_init=self.post_init,
       pre_save=self.pre_save,

@@ -139,7 +139,7 @@
     $item_form.find('.delete-item').click(function(e) {
       e.preventDefault();
       if (confirm('Are you sure you want to delete this item?')) {
-        $('.delete-item-form').attr('action', $(this).data('action')).submit()
+        $('.delete-item-form').attr('action', $(this).data('action')).submit();
       }
     });
 

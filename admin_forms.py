@@ -5,14 +5,15 @@ from wtforms.ext.appengine.db import ModelConverter, model_form
 
 
 class WTForm(wtforms.Form):
-  def __init__(self, formdata=None, obj=None, prefix='', **kwargs):
+  def __init__(self, formdata=None, obj=None, prefix='', handler=None, **kwargs):
     if self.pre_init:
       obj = self.pre_init(self, obj, formdata)
     self.instance = obj
+    self.handler = handler
 
     super(WTForm, self).__init__(formdata=formdata, obj=obj, prefix=prefix, **kwargs)
     if self.post_init:
-      obj = self.post_init(self, obj, formdata)
+      obj = self.post_init(self, obj, formdata, handler)
 
   def validate(self):
     """
@@ -54,7 +55,7 @@ class WTForm(wtforms.Form):
       setattr(instance, name, value)
 
     if self.pre_save:
-      instance = self.pre_save(self, instance)
+      instance = self.pre_save(self, instance, self.handler)
 
     if put:
       instance_or_result = instance.put()
@@ -65,7 +66,7 @@ class WTForm(wtforms.Form):
         instance = db.get(instance_or_result)
 
       if self.post_save:
-        return self.post_save(self, instance)
+        return self.post_save(self, instance, self.handler)
 
     return instance
 
@@ -88,7 +89,7 @@ def convert_DateProperty(model, prop, kwargs):
 
 def convert_DecimalProperty(model, prop, kwargs):
   """Returns a form field for a ``db.DecimalProperty``."""
-  return wtforms.fields.DecimalField(places=None, **kwargs)
+  return fields.DecimalField(**kwargs)
 
 
 def convert_ListProperty(model, prop, kwargs):

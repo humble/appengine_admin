@@ -95,15 +95,17 @@ class AdminHandler(BaseRequestHandler):
 
   @BaseRequestHandler.csrf_token_required()
   @authorized.check()
-  def index(self):
+  def index(self, template_kwargs=None):
     '''Admin start page.'''
-    self.render('index.html', {
+    template_kwargs = template_kwargs or {}
+    template_kwargs.update({
       'models': self.models,
     })
+    self.render('index.html', template_kwargs)
 
   @BaseRequestHandler.csrf_token_required()
   @authorized.check()
-  def list(self, model_name):
+  def list(self, model_name, template_kwargs=None):
     '''List entities for a model by name.'''
     model_admin = model_register.get_model_admin(model_name)
     paginator = utils.Paginator(model_admin=model_admin)
@@ -126,21 +128,23 @@ class AdminHandler(BaseRequestHandler):
       })
       self.json_response(json_items)
       return
-    self.render('list.html', {
+    template_kwargs = template_kwargs or {}
+    template_kwargs.update({
       'model_name': model_admin.model_name,
       'list_class_fields': model_admin.list_model_class_iter(),
       'list_fields': model_admin.list_model_iter,
       'items': items,
       'page': page,
     })
+    self.render('list.html', template_kwargs)
 
   @BaseRequestHandler.csrf_token_required()
   @authorized.check()
-  def new(self, model_name):
+  def new(self, model_name, template_kwargs=None):
     '''Handle creating a new record for a particular model.'''
     model_admin = model_register.get_model_admin(model_name)
     if self.request.method == 'POST':
-      item_form = model_admin.AdminNewForm(formdata=self.request.POST)
+      item_form = model_admin.AdminNewForm(formdata=self.request.POST, handler=self)
       if item_form.validate():
         # Save the data, and redirect to the edit page
         item = item_form.save()
@@ -148,18 +152,19 @@ class AdminHandler(BaseRequestHandler):
         self.redirect_admin('edit', model_name=model_admin.model_name, key=item.key())
         return
     else:
-      item_form = model_admin.AdminNewForm()
+      item_form = model_admin.AdminNewForm(handler=self)
 
-    template_kwargs = {
+    template_kwargs = template_kwargs or {}
+    template_kwargs.update({
       'item': None,
       'model_name': model_admin.model_name,
       'item_form': item_form,
-    }
+    })
     self.render('edit.html', template_kwargs)
 
   @BaseRequestHandler.csrf_token_required()
   @authorized.check()
-  def edit(self, model_name, key):
+  def edit(self, model_name, key, template_kwargs=None):
     '''Edit an editing existing record for a particular model.
 
     Raise Http404 if record is not found.
@@ -174,7 +179,7 @@ class AdminHandler(BaseRequestHandler):
       setattr(model_admin.AdminForm, prop_name, model_admin.AdminForm.converter.convert(item.__class__, prop_cls, None))
     model_admin.AdminForm.dynamic_properties = dynamic_properties
     if self.request.method == 'POST':
-      item_form = model_admin.AdminForm(formdata=self.request.POST, obj=item)
+      item_form = model_admin.AdminForm(formdata=self.request.POST, obj=item, handler=self)
       if item_form.validate():
         # Save the data, and redirect to the edit page
         item = item_form.save()
@@ -182,14 +187,15 @@ class AdminHandler(BaseRequestHandler):
         self.redirect_admin('edit', model_name=model_admin.model_name, key=item.key())
         return
     else:
-      item_form = model_admin.AdminForm(obj=item)
+      item_form = model_admin.AdminForm(obj=item, handler=self)
 
-    template_kwargs = {
+    template_kwargs = template_kwargs or {}
+    template_kwargs.update({
       'item': item,
       'model_name': model_admin.model_name,
       'item_form': item_form,
       'readonly_properties': model_admin.list_model_readonly_iter(item),
-    }
+    })
     self.render('edit.html', template_kwargs)
     for prop_name, prop_cls in dynamic_properties.items():
       delattr(model_admin.AdminForm, prop_name)

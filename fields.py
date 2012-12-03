@@ -69,6 +69,15 @@ class DateField(f.DateField):
     super(DateField, self).__init__(*args, **kwargs)
 
 
+class DecimalField(f.DecimalField):
+  def __init__(self, places=None, **kwargs):
+    super(DecimalField, self).__init__(places=places, **kwargs)
+
+  def process_formdata(self, valuelist):
+    if valuelist and valuelist[0] not in ('', None):
+      super(DecimalField, self).process_formdata(valuelist)
+
+
 class AjaxKeyField(f.Field):
   '''A field with an AJAX paginator widget.
 
