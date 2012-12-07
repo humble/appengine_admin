@@ -50,7 +50,7 @@
     </tr>
     </thead>
     <tbody>
-    {{ action_buttons(model_name, item) }}
+    {{ action_buttons(model_name, item, extra_create_buttons, extra_edit_buttons) }}
 {% for field in item_form %}
   {% if field.name in item_form.dynamic_properties %}
     {% continue %}
@@ -101,7 +101,7 @@
     </tr>
 {% endfor %}
 {% endif %}{# readonly_properties #}
-    {{ action_buttons(model_name, item) }}
+    {{ action_buttons(model_name, item, extra_create_buttons, extra_edit_buttons) }}
     </tbody>
 </table>
 </form>

@@ -41,11 +41,15 @@ class DefaultCheckPermissionTests(TestCase):
     self.old_get_current_user = users.get_current_user
     self.old_is_current_user_admin = users.is_current_user_admin
     users.create_login_url = fake_create_login_url
+    if hasattr(admin_settings, 'ACCESS_CALLBACK'):
+      self.access_callback = admin_settings.ACCESS_CALLBACK
+      delattr(admin_settings, 'ACCESS_CALLBACK')
 
   def extendedTearDown(self):
     users.create_login_url = self.old_create_login_url
     users.get_current_user = self.old_get_current_user
     users.is_current_user_admin = self.old_is_current_user_admin
+    admin_settings.ACCESS_CALLBACK = self.access_callback
 
   def test_default_check_not_logged_in(self):
     # Stubs

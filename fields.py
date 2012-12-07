@@ -61,6 +61,7 @@ class DateTimeField(f.DateTimeField):
         self.data = None
         raise ValueError(self.gettext('Not a valid datetime value'))
 
+
 class DateField(f.DateField):
   '''Custom DateField that use the appengine_admin DateTextInput.'''
   widget = widgets.DateTextInput()
@@ -73,9 +74,29 @@ class DecimalField(f.DecimalField):
   def __init__(self, places=None, **kwargs):
     super(DecimalField, self).__init__(places=places, **kwargs)
 
+  @property
+  def required(self):
+    for v in self.validators:
+      if isinstance(v, wtforms.validators.Required):
+        return True
+    return False
+
   def process_formdata(self, valuelist):
-    if valuelist and valuelist[0] not in ('', None):
+    if (self.data and self.required) or (valuelist and valuelist[0] not in ('', None)):
       super(DecimalField, self).process_formdata(valuelist)
+
+
+class IntegerField(f.IntegerField):
+  @property
+  def required(self):
+    for v in self.validators:
+      if isinstance(v, wtforms.validators.Required):
+        return True
+    return False
+
+  def process_formdata(self, valuelist):
+    if (self.data and self.required) or (valuelist and valuelist[0] not in ('', None)):
+      super(IntegerField, self).process_formdata(valuelist)
 
 
 class AjaxKeyField(f.Field):

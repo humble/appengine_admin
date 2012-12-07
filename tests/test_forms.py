@@ -24,6 +24,8 @@ class Project(db.Model):
   list_p_obj_classes = db.ListProperty(db.Key)
   list_p_obj_classes.object_classes = [SubProject]
   text_p = db.TextProperty()
+  int_p_req = db.IntegerProperty(required=True)
+  int_p = db.IntegerProperty()
 
   # TODO: tests with special properties
   # PickleProperty
@@ -48,7 +50,8 @@ class FormSaveTests(TestCase):
       list_p_obj_classes=[self.subproject2.key()],
       text_p='''This
       is some text.
-      On multiple lines.'''
+      On multiple lines.''',
+      int_p_req=2
     )
 
   def extendedTearDown(self):
@@ -66,12 +69,13 @@ class FormSaveTests(TestCase):
       ('list_p_obj_classes', str(self.subproject2.key())),
       ('list_p_obj_classes', str(self.subproject1.key())),
       ('text_p', u'This\r\n        is some text.\r\n        On multiple lines.'),
+      ('int_p_req', 1),
     ])
     form_cls = admin_forms.create(Project)
     form = form_cls(formdata=formdata, obj=self.project1)
     self.assertTrue(form.validate())
 
-    unchanged_props = ('string_p', 'none_string_p', 'string_p_def', 'boolean_p', 'datetime_p', 'datetime_p_def', 'text_p')
+    unchanged_props = ('string_p', 'none_string_p', 'string_p_def', 'boolean_p', 'datetime_p', 'datetime_p_def', 'text_p', 'int_p')
 
     new_project = form.save()
     self.project1 = db.get(self.project1.key())
@@ -83,6 +87,7 @@ class FormSaveTests(TestCase):
       'boolean_p_def': False,
       'list_p': [self.subproject1.key()],
       'list_p_obj_classes': [self.subproject2.key(), self.subproject1.key()],
+      'int_p_req': 1,
     }
 
     # Make sure changed properties are what they should be
@@ -91,7 +96,7 @@ class FormSaveTests(TestCase):
         continue
       self.assertEquals(getattr(new_project, prop), expected_values[prop])
 
-  def test_should_not_validate_if_required_value_is_missing(self):
+  def test_should_not_validate_if_required_string_value_is_missing(self):
     formdata = MultiDict([
       ('boolean_p', 'y'),  # front-end-formatting
       # 'boolean_p_def' value should be changed to False, since it is not submitted
@@ -101,9 +106,29 @@ class FormSaveTests(TestCase):
       ('list_p_obj_classes', str(self.subproject2.key())),
       ('list_p_obj_classes', str(self.subproject1.key())),
       ('text_p', u'This\r\n        is some text.\r\n        On multiple lines.'),
+      ('int_p_req', 1),
     ])
     form_cls = admin_forms.create(Project)
     form = form_cls(formdata=formdata, obj=self.project1)
     self.assertFalse(form.validate())
     self.assertEquals({'string_p': [u'This field is required.']}, form.errors)
+    self.assertRaises(db.BadValueError, form.save)
+
+  def test_should_not_validate_if_required_int_value_is_missing(self):
+    formdata = MultiDict([
+      ('string_p', 'project 1'),
+      ('boolean_p', 'y'),  # front-end-formatting
+      # 'boolean_p_def' value should be changed to False, since it is not submitted
+      ('datetime_p', '2012-12-13 23:00:00 UTC'),  # front-end formatting
+      ('datetime_p_def', '2012-11-12 13:14:00 UTC'),
+      ('list_p', str(self.subproject1.key())),
+      ('list_p_obj_classes', str(self.subproject2.key())),
+      ('list_p_obj_classes', str(self.subproject1.key())),
+      ('text_p', u'This\r\n        is some text.\r\n        On multiple lines.'),
+      ('int_p_req', ''),
+    ])
+    form_cls = admin_forms.create(Project)
+    form = form_cls(formdata=formdata, obj=self.project1)
+    self.assertFalse(form.validate())
+    self.assertEquals({'int_p_req': [u'This field is required.']}, form.errors)
     self.assertRaises(db.BadValueError, form.save)

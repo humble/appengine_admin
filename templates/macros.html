@@ -24,14 +24,22 @@
 {%- endmacro %}
 
 
-{% macro action_buttons(model_name, item) -%}
+{% macro action_buttons(model_name, item, extra_create_buttons, extra_edit_buttons) -%}
     <tr class='action-row'>
       <td class='table-row-heading'>Actions</td>
       <td class='table-row-value'>
   {% if item %}
         <button type='button' name='delete' class='delete-item pull-right btn btn-mini btn-warning' data-action='{{ uri_for('delete', model_name=model_name, key=item.key()) }}'>Delete</button>
+        <button type='submit' name='success' value='save' class='btn btn-success'>Save</button>
+    {% for btndata in extra_edit_buttons or [] %}
+        <button type='submit' name='success' value='{{ btndata.value }}' class='btn btn-success'>{{ btndata.text }}</button>
+    {% endfor %}
+  {% else %}
+        <button type='submit' name='success' value='create' class='btn btn-success'>Create</button>
+    {% for btndata in extra_create_buttons or [] %}
+        <button type='submit' name='success' value='{{ btndata.value }}' class='btn btn-success'>{{ btndata.text }}</button>
+    {% endfor %}
   {% endif %}
-        <button type='submit' name='success' class='btn btn-success'>Save</button>
       </td>
     </tr>
 {%- endmacro %}

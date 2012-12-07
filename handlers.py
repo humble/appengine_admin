@@ -166,8 +166,8 @@ class AdminHandler(BaseRequestHandler):
   @authorized.check()
   def edit(self, model_name, key, template_kwargs=None):
     '''Edit an editing existing record for a particular model.
-
-    Raise Http404 if record is not found.
+    Returns a tuple of (item, saved) where saved is True if the function has saved changes.
+    Raises Http404 if record is not found.
     '''
     model_admin = model_register.get_model_admin(model_name)
     item = utils.safe_get_by_key(model_admin.model, key)
@@ -185,7 +185,7 @@ class AdminHandler(BaseRequestHandler):
         item = item_form.save()
         self.add_message('%s %s updated.' % (model_name, unicode(item)))
         self.redirect_admin('edit', model_name=model_admin.model_name, key=item.key())
-        return
+        return item, True
     else:
       item_form = model_admin.AdminForm(obj=item, handler=self)
 
@@ -199,6 +199,8 @@ class AdminHandler(BaseRequestHandler):
     self.render('edit.html', template_kwargs)
     for prop_name, prop_cls in dynamic_properties.items():
       delattr(model_admin.AdminForm, prop_name)
+
+    return item, False
 
   @BaseRequestHandler.csrf_token_required()
   @authorized.check()
