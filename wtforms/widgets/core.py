@@ -27,7 +27,7 @@ def html_params(**kwargs):
     for k,v in sorted(iteritems(kwargs)):
         if k in ('class_', 'class__', 'for_'):
             k = k[:-1]
-        if v is True:
+        if v is True and k != 'value':
             params.append(k)
         else:
             params.append('%s="%s"' % (text_type(k), escape(text_type(v), quote=True)))

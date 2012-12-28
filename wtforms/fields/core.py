@@ -42,6 +42,7 @@ class Field(object):
     widget = None
     _formfield = True
     _translations = DummyTranslations()
+    do_not_call_in_templates = True # Allow Django 1.4 traversal
 
     def __new__(cls, *args, **kwargs):
         if '_form' in kwargs and '_name' in kwargs:
@@ -154,7 +155,7 @@ class Field(object):
         `pre_validate`, `post_validate` or both, depending on needs.
 
         :param form: The form the field belongs to.
-        :param extra_validators: A list of extra validators to run.
+        :param extra_validators: A sequence of extra validators to run.
         """
         self.errors = list(self.process_errors)
         stop_validation = False
@@ -171,16 +172,8 @@ class Field(object):
 
         # Run validators
         if not stop_validation:
-            for validator in itertools.chain(self.validators, extra_validators):
-                try:
-                    validator(form, self)
-                except StopValidation as e:
-                    if e.args and e.args[0]:
-                        self.errors.append(e.args[0])
-                    stop_validation = True
-                    break
-                except ValueError as e:
-                    self.errors.append(e.args[0])
+            chain = itertools.chain(self.validators, extra_validators)
+            stop_validation = self._run_validation_chain(form, chain)
 
         # Call post_validate
         try:
@@ -189,6 +182,26 @@ class Field(object):
             self.errors.append(e.args[0])
 
         return len(self.errors) == 0
+
+    def _run_validation_chain(self, form, validators):
+        """
+        Run a validation chain, stopping if any validator raises StopValidation.
+
+        :param form: The Form instance this field beongs to.
+        :param validators: a sequence or iterable of validator callables.
+        :return: True if validation was stopped, False otherwise.
+        """
+        for validator in validators:
+            try:
+                validator(form, self)
+            except StopValidation as e:
+                if e.args and e.args[0]:
+                    self.errors.append(e.args[0])
+                return True
+            except ValueError as e:
+                self.errors.append(e.args[0])
+
+        return False
 
     def pre_validate(self, form):
         """
@@ -533,7 +546,10 @@ class DecimalField(Field):
             if self.places is not None:
                 if hasattr(self.data, 'quantize'):
                     exp = decimal.Decimal('.1') ** self.places
-                    quantized = self.data.quantize(exp, rounding=self.rounding)
+                    if self.rounding is None:
+                        quantized = self.data.quantize(exp)
+                    else:
+                        quantized = self.data.quantize(exp, rounding=self.rounding)
                     return text_type(quantized)
                 else:
                     # If for some reason, data is a float or int, then format
@@ -745,8 +761,6 @@ class FieldList(Field):
         super(FieldList, self).__init__(label, validators, default=default, **kwargs)
         if self.filters:
             raise TypeError('FieldList does not accept any filters. Instead, define them on the enclosed field.')
-        if validators:
-            raise TypeError('FieldList does not accept any validators. Instead, define them on the enclosed field.')
         assert isinstance(unbound_field, UnboundField), 'Field must be unbound, not a field class'
         self.unbound_field = unbound_field
         self.min_entries = min_entries
@@ -799,13 +813,24 @@ class FieldList(Field):
                     yield int(k)
 
     def validate(self, form, extra_validators=tuple()):
+        """
+        Validate this FieldList.
+
+        Note that FieldList validation differs from normal field validation in
+        that FieldList validates all its enclosed fields first before running any
+        of its own validators.
+        """
         self.errors = []
-        success = True
+
+        # Run validators on all entries within
         for subfield in self.entries:
             if not subfield.validate(form):
-                success = False
                 self.errors.append(subfield.errors)
-        return success
+
+        chain = itertools.chain(self.validators, extra_validators)
+        stop_validation = self._run_validation_chain(form, chain)
+
+        return len(self.errors) == 0
 
     def populate_obj(self, obj, name):
         values = getattr(obj, name, None)
