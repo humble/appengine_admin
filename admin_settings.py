@@ -15,6 +15,9 @@ ADMIN_TEMPLATE_PATHS = [
 ADMIN_BASE_URL = '/admin/models'
 ADMIN_MEDIA_URL = '/appengine_admin_media'
 
+# Feature paths
+FEATURE_PICKLE_PROPERTY_PATH = None
+
 # Items per page in admin list view
 ADMIN_ITEMS_PER_PAGE = 50
 

@@ -45,10 +45,22 @@ def get_dynamic_properties(item):
   if not item:
     return {}
   dynamic_properties = {}
+  from . import admin_settings
+  if admin_settings.FEATURE_PICKLE_PROPERTY_PATH:
+    import pickle
+    PickleProperty = import_path(admin_settings.FEATURE_PICKLE_PROPERTY_PATH)
   for prop in item.dynamic_properties():
     value = getattr(item, prop)
     if isinstance(value, basestring):
-      dynamic_properties[prop] = db.TextProperty(verbose_name=get_human_name(prop))
+      if admin_settings.FEATURE_PICKLE_PROPERTY_PATH:
+        # Check if it might be a PickleProperty.
+        try:
+          setattr(item, prop, pickle.loads(value))
+          dynamic_properties[prop] = PickleProperty(verbose_name=get_human_name(prop))
+        except Exception:
+          dynamic_properties[prop] = db.TextProperty(verbose_name=get_human_name(prop))
+      else:
+        dynamic_properties[prop] = db.TextProperty(verbose_name=get_human_name(prop))
       dynamic_properties[prop].value = value
       dynamic_properties[prop].name = prop
     # TODO: implement properties for other data types
@@ -67,6 +79,8 @@ def safe_get_by_key(model, key):
       return item
   except datastore_errors.BadKeyError:
     raise Http404('Bad key format.')
+  except db.KindError:
+    raise Http404('Bad kind for key.')
   raise Http404('Item not found.')
 
 
@@ -77,9 +91,9 @@ def is_production():
   return True
 
 
-def notify_if_configured(reason, **kwargs):
+def notify_if_configured(reason, requesthandler, **kwargs):
   logging.error(u'Error occured (reason %s): %s' % (reason, kwargs))
   from . import admin_settings
   notify_func = admin_settings.NOTIFY_CALLBACK
   if notify_func:
-    notify_func(reason=reason, **kwargs)
+    notify_func(reason=reason, requesthandler=requesthandler, **kwargs)
