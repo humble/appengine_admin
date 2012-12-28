@@ -18,6 +18,16 @@ class DateTimeTextInput(w.TextInput):
     return super(DateTimeTextInput, self).__call__(*args, **kwargs)
 
 
+class BooleanWidget(w.ListWidget):
+  '''Gives a nice UI to let properties default to None.'''
+  def __init__(self, prefix_label=False, *args, **kwargs):
+    super(BooleanWidget, self).__init__(prefix_label=prefix_label, *args, **kwargs)
+
+  def __call__(self, *args, **kwargs):
+    kwargs.setdefault('class', 'boolean-field')
+    return super(BooleanWidget, self).__call__(*args, **kwargs)
+
+
 class AjaxKeyWidget(object):
   '''A ListProperty-compatible widget to easily manage Key entries.
 
@@ -63,7 +73,8 @@ class AjaxKeyWidget(object):
 
   @staticmethod
   def _get_item_edit_url(model_instance, handler):
-    return handler.uri_for('appengine_admin.edit', model_name=model_instance.__class__.__name__, key=model_instance.key())
+    return model_instance.admin_edit_url(handler) if hasattr(model_instance, 'admin_edit_url') \
+           else handler.uri_for('appengine_admin.edit', model_name=model_instance.__class__.__name__, key=model_instance.key())
 
   @staticmethod
   def _paged_selector(paged_cls, handler):

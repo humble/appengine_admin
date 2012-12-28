@@ -3,7 +3,7 @@ from datetime import datetime
 from google.appengine.ext import db
 
 from . import widgets, wtforms
-from wtforms import fields as f
+from wtforms import fields as f, widgets as w
 
 
 class DateTimeField(f.DateTimeField):
@@ -41,7 +41,7 @@ class DateTimeField(f.DateTimeField):
       return ' '.join(self.raw_data)
     else:
       data = self.data and self.data.strftime(self.format) or ''
-      if self.data.tzinfo:
+      if self.data and self.data.tzinfo:
         return data.replace(self.data.tzinfo._tzname, self.data.tzinfo.zone)
       return data
 
@@ -84,6 +84,11 @@ class DecimalField(f.DecimalField):
   def process_formdata(self, valuelist):
     if (self.data and self.required) or (valuelist and valuelist[0] not in ('', None)):
       super(DecimalField, self).process_formdata(valuelist)
+
+
+class BooleanField(f.RadioField):
+  widget = widgets.BooleanWidget()
+  option_widget = w.RadioInput()
 
 
 class IntegerField(f.IntegerField):

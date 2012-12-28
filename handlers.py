@@ -19,9 +19,10 @@ class BaseRequestHandler(CSRFHandler):
       self.render(path, {'errorpage': True})
       return
     utils.notify_if_configured(reason='handler_exception',
+                               requesthandler=self,
                                exception=exception, debug_mode=debug_mode,
                                traceback=traceback.format_exception(*sys.exc_info()),
-                               session=self.session)
+                               url=self.request.url)
     self.render('500.html', {'errorpage': True})
 
   @webapp2.cached_property

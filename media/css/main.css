@@ -55,6 +55,25 @@ body {
 .ui-tpicker-grid-label { background: none; border: none; margin: 0; padding: 0; }
 /* end jquery ui timepicker css */
 
+.boolean-field label {
+  display: inline;
+}
+.boolean-field {
+  height: 30px;
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+.boolean-field > li {
+  display: block;
+  float: left;
+  padding: 4px;
+}
+.boolean-field > li > input {
+  position: relative;
+  top: -2px;
+}
+
 .admin-datetime {
   width: 40%;
 }

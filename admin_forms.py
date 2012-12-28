@@ -87,6 +87,29 @@ def convert_DateProperty(model, prop, kwargs):
   return fields.DateField(format='%Y-%m-%d', **kwargs)
 
 
+def coerce_boolean(value):
+  if value is None or isinstance(value, bool):
+    return value
+  if value == 'None':
+    return None
+  if value == 'True':
+    return True
+  return False
+
+
+def convert_BooleanProperty(model, prop, kwargs):
+  """Returns a form field for a ``db.BooleanProperty``."""
+  kwargs.setdefault('coerce', coerce_boolean)
+  choices = [
+    (False, 'False'),
+    (True, 'True'),
+  ]
+  if not prop.required:
+    choices.append((None, 'None'))
+  kwargs.setdefault('choices', choices)
+  return fields.BooleanField(**kwargs)
+
+
 def convert_DecimalProperty(model, prop, kwargs):
   """Returns a form field for a ``db.DecimalProperty``."""
   return fields.DecimalField(**kwargs)
@@ -125,6 +148,7 @@ class AdminConverter(ModelConverter):
       'IntegerProperty': convert_IntegerProperty,
       'ListProperty': convert_ListProperty,
       'ReferenceProperty': convert_ReferenceProperty,
+      'BooleanProperty': convert_BooleanProperty,
     })
     for prop in model.properties().values():
       if hasattr(prop, 'wtforms_convert'):
