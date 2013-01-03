@@ -93,5 +93,6 @@ class FormSaveTests(TestCase):
     form_cls = admin_forms.create(AEProject)
     form = form_cls(formdata=formdata, obj=self.project1)
     self.assertFalse(form.validate())
-    self.assertEquals({'pickle_p': ['Could not pickle set value.']}, form.errors)
+    self.assertEquals({'pickle_p': ['Invalid syntax: EOL while scanning string literal']},
+                      form.errors)
     # TODO: self.assertRaises(db.BadValueError, form.save)

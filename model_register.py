@@ -25,7 +25,7 @@ class ModelAdmin(object):
       * list_fields - list of field names that should be shown in list view
       * edit_fields - list of field names that that should be editable
       * readonly_fields - list of field names that should be read-only
-      * pre_init, post_init, pre_save, post_save, field_validators
+      * pre_init, post_init, pre_save, post_save, validate_[field_name]
           - customize a model instance before init, before/after save, or with
             per-field processing/cleaning
           - see admin_forms.create for more details
@@ -41,12 +41,18 @@ class ModelAdmin(object):
   post_init = None
   pre_save = None
   post_save = None
-  field_validators = None
 
   def __init__(self):
     super(ModelAdmin, self).__init__()
     # Cache model name as string
     self.model_name = str(self.model.kind())
+
+    VALIDATE_PREFIX = 'validate_'
+    field_validators = {}
+    for prop_name in dir(self):
+      if prop_name.startswith(VALIDATE_PREFIX):
+        field_validators[prop_name[len(VALIDATE_PREFIX):]] = getattr(self, prop_name)
+
     self.AdminForm = admin_forms.create(
       model=self.model,
       only=self.edit_fields,
@@ -55,7 +61,7 @@ class ModelAdmin(object):
       post_init=self.post_init,
       pre_save=self.pre_save,
       post_save=self.post_save,
-      field_validators=self.field_validators
+      field_validators=field_validators,
     )
 
     self.AdminNewForm = admin_forms.create(
@@ -66,7 +72,7 @@ class ModelAdmin(object):
       post_init=self.post_init,
       pre_save=self.pre_save,
       post_save=self.post_save,
-      field_validators=self.field_validators,
+      field_validators=field_validators,
     )
 
   def list_model_iter(self, model):
