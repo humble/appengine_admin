@@ -38,7 +38,7 @@
   <ul class='errorlist'>
   {% for field_name, error_messages in item_form.errors.items() %}
     {% for error_message in error_messages %}
-      <li class='text-error'><a class='text-error' href='#row_{{ field_name }}'>{{ field_name }}: {{ error_message }}</a></li>
+      <li class='text-error'><a class='text-error' href='#row_{{ field_name }}'>{{ field_name }}: {{ error_message|safe }}</a></li>
     {% endfor %}
   {% endfor %}
   </ul>
