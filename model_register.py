@@ -84,7 +84,10 @@ class ModelAdmin(object):
     '''
     for field_name in self.list_fields:
       if isinstance(field_name, basestring):
-        yield getattr(model, field_name)
+        try:
+          yield getattr(model, field_name)
+        except db.ReferencePropertyResolveError:
+          yield '[missing]'
       elif callable(field_name):
         yield callable(model)
 
