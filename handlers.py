@@ -165,6 +165,26 @@ class AdminHandler(BaseRequestHandler):
 
   @BaseRequestHandler.csrf_token_required()
   @authorized.check()
+  def clone(self, model_name, key, template_kwargs=None):
+    '''Much like new, but pre-populates the fields with the values from an existing instance.
+    '''
+    model_admin = model_register.get_model_admin(model_name)
+    old_item = utils.safe_get_by_key(model_admin.model, key)
+    if not old_item:
+      raise utils.Http404()
+    item_form = model_admin.AdminNewForm(obj=old_item, handler=self)
+    template_kwargs = template_kwargs or {}
+    template_kwargs.update({
+      'item': None,
+      'model_name': model_admin.model_name,
+      'item_form': item_form,
+      'page_title': 'Clone %s %s' % (model_admin.model_name, old_item)
+    })
+    self.render('edit.html', template_kwargs)
+
+
+  @BaseRequestHandler.csrf_token_required()
+  @authorized.check()
   def edit(self, model_name, key, template_kwargs=None):
     '''Edit an editing existing record for a particular model.
     Returns a tuple of (item, saved) where saved is True if the function has saved changes.

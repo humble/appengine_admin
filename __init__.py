@@ -16,6 +16,7 @@ def get_application_routes(handler_cls=None):
     ('appengine_admin.list', 'GET', r'/<model_name>/list/', handler_cls, 'list'),
     ('appengine_admin.new', None, r'/<model_name>/new/', handler_cls, 'new'),
     ('appengine_admin.edit', None, r'/<model_name>/edit/<key>/', handler_cls, 'edit'),
+    ('appengine_admin.clone', 'GET', r'/<model_name>/clone/<key>/', handler_cls, 'clone'),
     ('appengine_admin.delete', 'POST', r'/<model_name>/delete/<key>/', handler_cls, 'delete'),
     ('appengine_admin.blob', 'GET', r'/<model_name>/blob/<field_name>/<key>/', handler_cls, 'blob'),
   )

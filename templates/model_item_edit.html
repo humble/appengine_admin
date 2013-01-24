@@ -16,15 +16,25 @@
 {% block title %}
 {% if item %}
   <div class='btn-group pull-right'>
-    <a href='{{ uri_for('new', model_name=model_name) }}'><div class='btn btn-info'>New {{ model_name }}</div></a>
+    <a class='link-button' href='{{ uri_for('new', model_name=model_name) }}'><div class='btn btn-info'>New {{ model_name }}</div></a>
   {% if item.get_absolute_url %}
-    <a href='{{ item.get_absolute_url() }}' target='_blank'><div class='btn'>View &raquo;</div></a>
+    <a class='link-button' href='{{ item.get_absolute_url() }}' target='_blank'><div class='btn'>View &raquo;</div></a>
+  {% endif %}
+  {% if not versions %}
+    <a class='link-button' href='{{ uri_for('clone', model_name=model_name, key=item.key()) }}'><div class='btn btn-info'>Clone {{ item }}</div></a>
   {% endif %}
   </div>
+
 {% endif %}
-  <h1>{% if item %}
-    Edit {{ item }}
-  {% else %}New {{ model_name }}{% endif %}</h1>
+  <h1>
+  {% if page_title %}
+    {{ page_title }}
+  {% else %}
+    {% if item %}
+      Edit {{ item }}
+    {% else %}New {{ model_name }}{% endif %}
+  {% endif %}
+  </h1>
 {% endblock %}
 
 {% block content %}

@@ -1,3 +1,5 @@
+from google.appengine.ext import db
+
 from . import admin_forms, utils
 
 
@@ -104,7 +106,11 @@ class ModelAdmin(object):
     Used to generate the list of readonly properties when editing an item.
     '''
     for field_name in self.readonly_fields:
-      yield PropertyMap(field_name, getattr(self.model, field_name), getattr(model, field_name))
+      try:
+        result = getattr(model, field_name)
+      except db.ReferencePropertyResolveError:
+        result = '[missing]'
+      yield PropertyMap(field_name, getattr(self.model, field_name), result)
 
 
 def register(*args):

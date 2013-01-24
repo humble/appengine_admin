@@ -114,3 +114,7 @@ body {
   font-size: 90%;
   padding: 8px 0;
 }
+
+.link-button {
+  margin-left: 4px;
+}
