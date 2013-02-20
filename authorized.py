@@ -1,5 +1,8 @@
-﻿def check(*check_args, **check_kwargs):
+﻿from functools import wraps
+
+def check(*check_args, **check_kwargs):
   def wrapper(handler_method):
+    @wraps(handler_method)
     def check_wrapper(self, *args, **kwargs):
       from . import admin_settings
       callback = getattr(admin_settings, 'ACCESS_CALLBACK', is_google_admin)
