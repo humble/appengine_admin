@@ -185,7 +185,7 @@ class AdminHandler(BaseRequestHandler):
 
   @BaseRequestHandler.csrf_token_required()
   @authorized.check()
-  def edit(self, model_name, key, template_kwargs=None):
+  def edit(self, model_name, key, template_kwargs=None, extra_errors=None):
     '''Edit an editing existing record for a particular model.
     Returns a tuple of (item, saved) where saved is True if the function has saved changes.
     Raises Http404 if record is not found.
@@ -201,7 +201,7 @@ class AdminHandler(BaseRequestHandler):
     model_admin.AdminForm.dynamic_properties = dynamic_properties
     if self.request.method == 'POST':
       item_form = model_admin.AdminForm(formdata=self.request.POST, obj=item, handler=self)
-      if item_form.validate():
+      if item_form.validate() and not extra_errors:
         # Save the data, and redirect to the edit page
         item = item_form.save()
         self.add_message('%s %s updated.' % (model_name, unicode(item)))
@@ -216,6 +216,7 @@ class AdminHandler(BaseRequestHandler):
       'model_name': model_admin.model_name,
       'item_form': item_form,
       'readonly_properties': model_admin.list_model_readonly_iter(item),
+      'extra_errors': extra_errors,
     })
     self.render('edit.html', template_kwargs)
     for prop_name, prop_cls in dynamic_properties.items():

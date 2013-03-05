@@ -14,25 +14,26 @@
 {% endif %}
 
 {% block title %}
-{% if item %}
+  {% if item %}
   <div class='btn-group pull-right'>
+    {% block title_actions %}
     <a class='link-button' href='{{ uri_for('new', model_name=model_name) }}'><div class='btn btn-info'>New {{ model_name }}</div></a>
-  {% if item.get_absolute_url %}
+    {% if item.get_absolute_url %}
     <a class='link-button' href='{{ item.get_absolute_url() }}' target='_blank'><div class='btn'>View &raquo;</div></a>
-  {% endif %}
-  {% if not versions %}
-    <a class='link-button' href='{{ uri_for('clone', model_name=model_name, key=item.key()) }}'><div class='btn btn-info'>Clone {{ item }}</div></a>
-  {% endif %}
+    {% endif %}
+    {% endblock %}
   </div>
 
-{% endif %}
+  {% endif %}
   <h1>
   {% if page_title %}
     {{ page_title }}
   {% else %}
     {% if item %}
-      Edit {{ item }}
-    {% else %}New {{ model_name }}{% endif %}
+    Edit {{ item }}
+    {% else %}
+    New {{ model_name }}
+    {% endif %}
   {% endif %}
   </h1>
 {% endblock %}
@@ -43,16 +44,24 @@
         action='{% if item %}{{ uri_for('edit', model_name=model_name, key=item.key()) }}{% else %}{{ uri_for('new', model_name=model_name) }}{% endif %}'
     {% if item_form.enctype %}enctype='{{ item_form.enctype }}'{% endif %}>
     {{ csrf_token() }}
-{% if item_form.errors %}
+    {% block extra_form_content %}{% endblock %}
+  {% if item_form.errors or extra_errors %}
   <h3 class='text-error'>Errors</h3>
   <ul class='errorlist'>
-  {% for field_name, error_messages in item_form.errors.items() %}
-    {% for error_message in error_messages %}
-      <li class='text-error'><a class='text-error' href='#row_{{ field_name }}'>{{ field_name }}: {{ error_message|safe }}</a></li>
-    {% endfor %}
-  {% endfor %}
+    {% if extra_errors %}
+      {% for error_message in extra_errors %}
+    <li class='text-error'>{{ error_message|safe }}</li>
+      {% endfor %}
+    {% endif %}
+    {% if item_form.errors %}
+      {% for field_name, error_messages in item_form.errors.items() %}
+        {% for error_message in error_messages %}
+    <li class='text-error'><a class='text-error' href='#row_{{ field_name }}'>{{ field_name }}: {{ error_message|safe }}</a></li>
+        {% endfor %}
+      {% endfor %}
+    {% endif %}
   </ul>
-{% endif %}
+  {% endif %}
   <table class='table table-striped table-bordered table-hover'>
     <thead>
     <tr>
@@ -61,56 +70,56 @@
     </thead>
     <tbody>
     {{ action_buttons(model_name, item, extra_create_buttons, extra_edit_buttons) }}
-{% for field in item_form %}
-  {% if field.name in item_form.dynamic_properties %}
-    {% continue %}
-  {% endif %}
+  {% for field in item_form %}
+    {% if field.name in item_form.dynamic_properties %}
+      {% continue %}
+    {% endif %}
     <tr id='row_{{ field.name }}' class='control-group{% if field.errors %} error{% endif %}'>
       <td class='table-row-heading'>{{ field.label|safe }}</td>
       <td class='table-row-value'>
         <div class='controls'>
           {{ field|safe }}
-        {% if field.errors %}
-          {% for error in field.errors %}
+    {% if field.errors %}
+      {% for error in field.errors %}
           <span class='help-inline'>{{ error|safe }}</span>
-          {% endfor %}
-        {% endif %}
+      {% endfor %}
+    {% endif %}
         </div>
       </td>
     </tr>
-{% endfor %}
-{% if item and item_form.dynamic_properties %}
+  {% endfor %}
+  {% if item and item_form.dynamic_properties %}
     <!-- Dynamic properties -->
     <tr>
       <td colspan='2'><h3>Dynamic properties (specific to this instance)</h3></td>
     </tr>
-{% for prop in item_form.dynamic_properties.keys() %}
+    {% for prop in item_form.dynamic_properties.keys() %}
     <tr>
       <td class='table-row-heading'>{{ item_form[prop].label|safe }}</td>
       <td class='table-row-value'>
-  {{ item_form[prop]|safe }}
+        {{ item_form[prop]|safe }}
       </td>
     </tr>
-{% endfor %}
-{% endif %}{# item #}
-{% if readonly_properties %}
+    {% endfor %}
+  {% endif %}{# item #}
+  {% if readonly_properties %}
     <!-- Readonly properties -->
     <tr>
         <td colspan='2'><h3>Read-only properties</h3></td>
     </tr>
-{% for field in readonly_properties %}
+    {% for field in readonly_properties %}
     <tr>
       <td class='table-row-heading'>{{ field.verbose_name }}</td>
       <td class='table-row-value'>
-  {% if field.typeName == 'BlobProperty' and field.value %}
+      {% if field.typeName == 'BlobProperty' and field.value %}
         <a href='{{ self.uri_for('blob', model_name=model_name, field_name=field.name, key=item.key()) }}'>File uploaded: {{ field.meta.File_Name }}</a>
-  {% else %}
+      {% else %}
         {{ field.value }}
-  {% endif %}
+      {% endif %}
       </td>
     </tr>
-{% endfor %}
-{% endif %}{# readonly_properties #}
+    {% endfor %}
+  {% endif %}{# readonly_properties #}
     {{ action_buttons(model_name, item, extra_create_buttons, extra_edit_buttons) }}
     </tbody>
 </table>

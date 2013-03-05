@@ -134,7 +134,10 @@ class AjaxKeyField(f.Field):
       else:
         value = valuelist
       if isinstance(value, basestring):
-        value = db.get(value)
+        try:
+          value = db.get(value)
+        except db.BadKeyError:
+          raise ValueError('Invalid or missing key.')
       self.data = value
       self.objects.append((value.key(), value))
       return
