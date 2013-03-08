@@ -1,7 +1,9 @@
 {% extends 'admin_base.html' %}
+{% block title %}
+  <h2 class='text-error'>404 - Page not found</h2>
+{% endblock %}
 
 {% block content %}
-  <h2 class='text-error'>404 - Page not found</h2>
   <p>Could not find the page you're looking for.</p>
   <p>Go to <a href='{{ uri_for('index') }}'>AppEngine Admin Home</a>.</p>
 {% endblock %}

@@ -15,6 +15,8 @@ class BaseRequestHandler(CSRFHandler):
   def handle_exception(self, exception, debug_mode):
     if isinstance(exception, utils.Http404):
       self.error(exception.code)
+      for message in exception.args:
+        self.add_message(message)
       path = '%s.html' % exception.code
       self.render(path, {'errorpage': True})
       return

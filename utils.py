@@ -1,7 +1,6 @@
 import logging
 import os
 
-from google.appengine.api import datastore_errors
 from google.appengine.ext import db
 
 
@@ -77,10 +76,12 @@ def safe_get_by_key(model, key):
     item = model.get(key)
     if item:
       return item
-  except datastore_errors.BadKeyError:
+  except db.BadKeyError:
     raise Http404('Bad key format.')
   except db.KindError:
     raise Http404('Bad kind for key.')
+  except db.BadValueError:
+    raise Http404('Bad value in the database. Possibly a required property is not set.')
   raise Http404('Item not found.')
 
 
